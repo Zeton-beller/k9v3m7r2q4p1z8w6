@@ -12,7 +12,7 @@
 // Language Enums were changed between NTSC and PAL, so using (gSaveContext.language == LANGUAGE_ENG)
 // as a substitute for indexing arrays with just gSaveContext.language
 
-#define NTSC_LANGUAGE_INDEX (gSaveContext.language == LANGUAGE_ENG)
+#define NTSC_LANGUAGE_INDEX (gSaveContext.language == LANGUAGE_ENG || gSaveContext.language == LANGUAGE_CHI)
 
 // DATA
 
