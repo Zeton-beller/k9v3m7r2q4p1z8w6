@@ -12,13 +12,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Install devkitPro & Dependencies
+      - name: Install devkitPro APT Repository & Packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y curl libgl1-mesa-dev libglu1-mesa-dev
-          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -o install-devkitpro-pacman https://apt.devkitpro.org/install-devkitpro-pacman
-          chmod +x install-devkitpro-pacman
-          sudo ./install-devkitpro-pacman
+          sudo apt-get install -y wget gpg libgl1-mesa-dev libglu1-mesa-dev
+          sudo mkdir -p /etc/apt/keyrings
+          wget -O - https://apt.devkitpro.org/devkitpro-keyring.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/devkitpro.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/devkitpro.gpg] https://apt.devkitpro.org/stable devkitpro main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
+          sudo apt-get update
+          sudo apt-get install -y devkitpro-pacman
           export PATH=/opt/devkitpro/pacman/bin:$PATH
           sudo /opt/devkitpro/pacman/bin/dkp-pacman -Syu --noconfirm
           sudo /opt/devkitpro/pacman/bin/dkp-pacman -S --noconfirm switch-dev switch-sdl2 switch-glad switch-libpng switch-freetype switch-zlib switch-bzip2 switch-curl switch-libzip
