@@ -19,8 +19,8 @@ jobs:
           curl -fsSL https://apt.devkitpro.org/devkitpro-pub.gpg | sudo tee /usr/local/share/keyrings/devkitpro-pub.gpg > /dev/null
           echo "deb [trusted=yes] https://apt.devkitpro.org/ stable main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
           
-          # 预先配置 pacman.conf 注入 User-Agent 伪装标头，彻底消除 Cloudflare 403
-          cat << 'EOF' | sudo tee /opt/devkitpro/pacman/etc/pacman.conf
+          # 预先写入 pacman.conf 配置 User-Agent 伪装标头，彻底消除 Cloudflare 403
+          sudo bash -c 'cat > /opt/devkitpro/pacman/etc/pacman.conf << "PACMANEOF"
 [options]
 HoldPkg     = pacman glibc
 Architecture = auto
@@ -33,7 +33,7 @@ Server = https://pkg.devkitpro.org/packages
 
 [dkp-linux]
 Server = https://pkg.devkitpro.org/packages/linux
-EOF
+PACMANEOF'
 
           sudo apt update
           sudo apt install -y devkitpro-pacman || true
