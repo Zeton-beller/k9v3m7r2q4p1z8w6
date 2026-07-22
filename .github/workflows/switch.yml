@@ -65,30 +65,17 @@ jobs:
 
       - name: Patch source for Switch compatibility
         run: |
-          # Patch StormLib: define ftruncate for Switch (no POSIX ftruncate on Switch)
-          STORMPORT="libultraship/extern/StormLib/src/StormPort.h"
-          if [ -f "$STORMPORT" ]; then
-            sed -i 's|#define ftruncate64 ftruncate|#ifndef __SWITCH__\n#define ftruncate64 ftruncate\n#endif|g' "$STORMPORT"
-            echo "Patched StormPort.h"
-          fi
-          # Also search in ZAPDTR
-          find . -name "StormPort.h" | while read f; do
-            sed -i 's|#define ftruncate64 ftruncate|#ifndef __SWITCH__\n#define ftruncate64 ftruncate\n#endif|g' "$f"
-            echo "Patched: $f"
-          done
-
-          # Patch ImGui opengl3 loader: disable dlfcn.h on Switch
+          # Patch ImGui opengl3 loader: disable dlfcn.h on Switch (no dynamic linking)
           find . -name "imgui_impl_opengl3_loader.h" | while read f; do
             sed -i 's|#include <dlfcn.h>|#ifndef __SWITCH__\n#include <dlfcn.h>\n#endif|g' "$f"
-            echo "Patched: $f"
+            echo "Patched imgui: $f"
           done
 
-      - name: Build Switch NRO
+      - name: Configure Switch build (cmake generates + downloads deps via FetchContent)
         run: |
           source /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
 
-          # Create CMake init file: enable WHOLE_ARCHIVE via GCC --whole-archive linker flag
           cat > /tmp/switch-init.cmake << 'CMAKEINIT'
           set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE "LINKER:--whole-archive" "<LINK_ITEM>" "LINKER:--no-whole-archive" CACHE STRING "" FORCE)
           set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE CACHE BOOL "" FORCE)
@@ -98,6 +85,24 @@ jobs:
             -C /tmp/switch-init.cmake \
             -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
             -DCMAKE_BUILD_TYPE=Release
+
+      - name: Patch FetchContent dependencies for Switch
+        run: |
+          # StormLib is fetched by cmake FetchContent - patch it AFTER configure step
+          find build-switch/_deps -name "StormPort.h" 2>/dev/null | while read f; do
+            sed -i 's|#define ftruncate64 ftruncate|#ifdef __SWITCH__\n#define ftruncate64(fd,sz) (0)\n#else\n#define ftruncate64 ftruncate\n#endif|g' "$f"
+            echo "Patched StormPort.h: $f"
+          done
+          # Also patch any other place ftruncate might be missing
+          find build-switch/_deps -name "imgui_impl_opengl3_loader.h" 2>/dev/null | while read f; do
+            sed -i 's|#include <dlfcn.h>|#ifndef __SWITCH__\n#include <dlfcn.h>\n#endif|g' "$f"
+            echo "Patched imgui in deps: $f"
+          done
+
+      - name: Build Switch NRO
+        run: |
+          source /etc/profile.d/devkit-env.sh
+          export DEVKITPRO=/opt/devkitpro
           cmake --build build-switch --target soh -j$(nproc)
 
       - name: Upload Switch NRO Artifact
