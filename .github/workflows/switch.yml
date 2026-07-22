@@ -16,8 +16,10 @@ jobs:
         run: |
           echo "deb [trusted=yes] https://apt.devkitpro.org/ stable main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
           sudo apt update
-          sudo apt install -y devkitpro-pacman
-          sudo dkp-pacman -Syu --noconfirm
+          sudo apt install -y devkitpro-pacman || true
+          sudo sed -i 's|^#XferCommand = /usr/bin/curl.*|XferCommand = /usr/bin/curl -L -A "Mozilla/5.0" %u -o %o|g' /opt/devkitpro/pacman/etc/pacman.conf
+          echo 'XferCommand = /usr/bin/curl -L -A "Mozilla/5.0" %u -o %o' | sudo tee -a /opt/devkitpro/pacman/etc/pacman.conf
+          sudo dkp-pacman -Sy --noconfirm
           sudo dkp-pacman -S --noconfirm switch-dev switch-sdl2 switch-glad switch-libpng switch-freetype switch-zlib switch-bzip2 switch-curl switch-libopus switch-opusfile switch-libvorbis switch-libogg
       - name: Build and Install Custom Switch Libraries (libzip, tinyxml2, nlohmann_json, spdlog)
         run: |
