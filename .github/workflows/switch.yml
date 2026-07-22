@@ -103,7 +103,15 @@ jobs:
         run: |
           source /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
-          cmake --build build-switch --target soh -j$(nproc)
+          # Use -j1 to get sequential error output; also keep-going to see all errors
+          cmake --build build-switch --target soh -j1 2>&1 | tee /tmp/build.log || true
+          # Show only error lines
+          echo "=== ERRORS ==="
+          grep -n "error:" /tmp/build.log | head -60
+          echo "=== MAKEFILE ERRORS ==="
+          grep -n "Error\|error" /tmp/build.log | tail -30
+          # Fail if soh.nro was not produced
+          test -f build-switch/soh.nro
 
       - name: Upload Switch NRO Artifact
         uses: actions/upload-artifact@v4
