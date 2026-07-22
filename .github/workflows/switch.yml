@@ -12,43 +12,72 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
       - name: Install devkitPro & Dependencies
         run: |
+          # Pre-create pacman config directory so we can write our config BEFORE apt post-install runs
+          sudo mkdir -p /opt/devkitpro/pacman/etc/pacman.d
+          # Add devkitpro apt source
           echo "deb [trusted=yes] https://apt.devkitpro.org/ stable main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
-          sudo apt update
-          sudo apt install -y devkitpro-pacman || true
+          sudo apt-get update
+          # Install devkitpro-pacman and immediately fix pacman.conf if install partially succeeds
+          sudo apt-get install -y devkitpro-pacman || true
+          # Patch ALL SigLevel entries and set custom curl user-agent for dkp-pacman
           sudo sed -i 's/SigLevel.*/SigLevel = Never/g' /opt/devkitpro/pacman/etc/pacman.conf
-          sudo sed -i 's|^#XferCommand = /usr/bin/curl.*|XferCommand = /usr/bin/curl -L -A "Mozilla/5.0" %u -o %o|g' /opt/devkitpro/pacman/etc/pacman.conf
-          sudo dkp-pacman-key --init || true
-          sudo dkp-pacman-key --populate devkitpro || true
-          sudo dkp-pacman -Sy --noconfirm
-          sudo dkp-pacman -S --noconfirm switch-dev switch-sdl2 switch-glad switch-libpng switch-freetype switch-zlib switch-bzip2 switch-curl switch-libopus switch-opusfile switch-libvorbis switch-libogg
-      - name: Build and Install Custom Switch Libraries (libzip, tinyxml2, nlohmann_json, spdlog)
+          sudo bash -c 'grep -q "XferCommand" /opt/devkitpro/pacman/etc/pacman.conf || echo "XferCommand = /usr/bin/curl -L -A \"Mozilla/5.0\" %u -o %o" >> /opt/devkitpro/pacman/etc/pacman.conf'
+          # Re-configure dpkg since post-install failed
+          sudo dpkg --configure -a || true
+          # Now sync and install with our patched config
+          sudo dkp-pacman -Sy --noconfirm --config /opt/devkitpro/pacman/etc/pacman.conf
+          sudo dkp-pacman -S --noconfirm --config /opt/devkitpro/pacman/etc/pacman.conf \
+            switch-dev switch-sdl2 switch-glad switch-libpng switch-freetype \
+            switch-zlib switch-bzip2 switch-curl switch-libopus switch-opusfile \
+            switch-libvorbis switch-libogg
+
+      - name: Build and Install Custom Switch Libraries
         run: |
           source /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
 
           git clone --depth 1 https://github.com/nih-at/libzip.git /tmp/libzip
-          cmake -B /tmp/libzip/build -S /tmp/libzip -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch -DBUILD_SHARED_LIBS=OFF -DBUILD_OSSFUZZ=OFF -DENABLE_COMMONCRYPTO=OFF -DENABLE_GNUTLS=OFF -DENABLE_MBEDTLS=OFF -DENABLE_OPENSSL=OFF -DENABLE_WINDOWS_CRYPTO=OFF -DBUILD_TOOLS=OFF -DBUILD_REGRESS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOC=OFF
+          cmake -B /tmp/libzip/build -S /tmp/libzip \
+            -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
+            -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
+            -DBUILD_SHARED_LIBS=OFF -DBUILD_OSSFUZZ=OFF \
+            -DENABLE_COMMONCRYPTO=OFF -DENABLE_GNUTLS=OFF \
+            -DENABLE_MBEDTLS=OFF -DENABLE_OPENSSL=OFF \
+            -DENABLE_WINDOWS_CRYPTO=OFF -DBUILD_TOOLS=OFF \
+            -DBUILD_REGRESS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOC=OFF
           sudo -E cmake --build /tmp/libzip/build --target install -j$(nproc)
 
           git clone --depth 1 https://github.com/leethomason/tinyxml2.git /tmp/tinyxml2
-          cmake -B /tmp/tinyxml2/build -S /tmp/tinyxml2 -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF
+          cmake -B /tmp/tinyxml2/build -S /tmp/tinyxml2 \
+            -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
+            -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
+            -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF
           sudo -E cmake --build /tmp/tinyxml2/build --target install -j$(nproc)
 
           git clone --depth 1 https://github.com/nlohmann/json.git /tmp/json
-          cmake -B /tmp/json/build -S /tmp/json -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch -DJSON_BuildTests=OFF
+          cmake -B /tmp/json/build -S /tmp/json \
+            -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
+            -DJSON_BuildTests=OFF
           sudo -E cmake --build /tmp/json/build --target install
 
           git clone --depth 1 https://github.com/gabime/spdlog.git /tmp/spdlog
-          cmake -B /tmp/spdlog/build -S /tmp/spdlog -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_BUILD_EXAMPLE=OFF
+          cmake -B /tmp/spdlog/build -S /tmp/spdlog \
+            -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
+            -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_BUILD_EXAMPLE=OFF
           sudo -E cmake --build /tmp/spdlog/build --target install
+
       - name: Build Switch NRO
         run: |
           source /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
-          cmake -B build-switch -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake -DCMAKE_BUILD_TYPE=Release
+          cmake -B build-switch \
+            -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
+            -DCMAKE_BUILD_TYPE=Release
           cmake --build build-switch --target soh -j$(nproc)
+
       - name: Upload Switch NRO Artifact
         uses: actions/upload-artifact@v4
         with:
