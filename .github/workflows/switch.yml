@@ -15,10 +15,10 @@ jobs:
           submodules: recursive
       - name: Fix Git Dubious Ownership
         run: git config --global --add safe.directory '*'
-      - name: Install Switch Portlibs
+      - name: Install Switch Dependencies
         run: |
           dkp-pacman -Syu --noconfirm
-          dkp-pacman -S --noconfirm switch-dev switch-portlibs
+          dkp-pacman -S --noconfirm switch-dev switch-portlibs switch-libzip switch-curl switch-bzip2 switch-zlib switch-freetype switch-libpng switch-sdl2 switch-glad
       - name: Build Switch NRO
         run: |
           cmake -B build-switch -DCMAKE_TOOLCHAIN_FILE=/opt/devkitpro/cmake/Switch.cmake -DSWITCH=ON -DCMAKE_BUILD_TYPE=Release
