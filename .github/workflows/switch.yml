@@ -29,8 +29,8 @@ jobs:
       - name: Build Switch NRO (Official dkp-cmake Command)
         run: |
           source /etc/profile.d/devkit-env.sh
-          # 使用 devkitpro 官方 dkp-cmake 显式开启 -DSWITCH=ON
-          $DEVKITPRO/portlibs/switch/bin/dkp-cmake -B build-switch -DSWITCH=ON -DCMAKE_BUILD_TYPE=Release
+          # 使用标准的 CMAKE_TOOLCHAIN_FILE 显式开启 -DSWITCH=ON 开关
+          cmake -B build-switch -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake -DSWITCH=ON -DCMAKE_BUILD_TYPE=Release
           cmake --build build-switch --target soh.nro -j$(nproc)
 
       - name: Upload Switch NRO Artifact
