@@ -15,21 +15,15 @@ jobs:
 
       - name: Install devkitPro & Dependencies
         run: |
-          # Pre-create pacman config directory so we can write our config BEFORE apt post-install runs
           sudo mkdir -p /opt/devkitpro/pacman/etc/pacman.d
-          # Add devkitpro apt source
           echo "deb [trusted=yes] https://apt.devkitpro.org/ stable main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
           sudo apt-get update
-          # Install devkitpro-pacman and immediately fix pacman.conf if install partially succeeds
           sudo apt-get install -y devkitpro-pacman || true
-          # Patch ALL SigLevel entries and set custom curl user-agent for dkp-pacman
           sudo sed -i 's/SigLevel.*/SigLevel = Never/g' /opt/devkitpro/pacman/etc/pacman.conf
           sudo bash -c 'grep -q "XferCommand" /opt/devkitpro/pacman/etc/pacman.conf || echo "XferCommand = /usr/bin/curl -L -A \"Mozilla/5.0\" %u -o %o" >> /opt/devkitpro/pacman/etc/pacman.conf'
-          # Re-configure dpkg since post-install failed
           sudo dpkg --configure -a || true
-          # Now sync and install with our patched config
-          sudo dkp-pacman -Sy --noconfirm --config /opt/devkitpro/pacman/etc/pacman.conf
-          sudo dkp-pacman -S --noconfirm --config /opt/devkitpro/pacman/etc/pacman.conf \
+          sudo dkp-pacman -Sy --noconfirm
+          sudo dkp-pacman -S --noconfirm \
             switch-dev switch-sdl2 switch-glad switch-libpng switch-freetype \
             switch-zlib switch-bzip2 switch-curl switch-libopus switch-opusfile \
             switch-libvorbis switch-libogg
@@ -73,7 +67,15 @@ jobs:
         run: |
           source /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
+
+          # Create CMake init file: enable WHOLE_ARCHIVE via GCC --whole-archive linker flag
+          cat > /tmp/switch-init.cmake << 'CMAKEINIT'
+          set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE "LINKER:--whole-archive" "<LINK_ITEM>" "LINKER:--no-whole-archive" CACHE STRING "" FORCE)
+          set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE CACHE BOOL "" FORCE)
+          CMAKEINIT
+
           cmake -B build-switch \
+            -C /tmp/switch-init.cmake \
             -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
             -DCMAKE_BUILD_TYPE=Release
           cmake --build build-switch --target soh -j$(nproc)
