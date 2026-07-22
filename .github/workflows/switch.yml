@@ -17,7 +17,7 @@ jobs:
         run: |
           sudo mkdir -p /usr/local/share/keyrings
           curl -fsSL https://apt.devkitpro.org/devkitpro-pub.gpg | sudo tee /usr/local/share/keyrings/devkitpro-pub.gpg > /dev/null
-          echo "deb [signed-by=/usr/local/share/keyrings/devkitpro-pub.gpg] https://apt.devkitpro.org/ stable main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
+          echo "deb [trusted=yes] https://apt.devkitpro.org/ stable main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
           sudo apt update
           sudo apt install -y devkitpro-pacman || true
           # 兼容处理 Cloudflare 防刷机制
