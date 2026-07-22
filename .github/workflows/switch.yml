@@ -96,7 +96,7 @@ jobs:
         run: |
           source /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
-          cmake --build build-switch --target soh.nro -j$(nproc)
+          cmake --build build-switch --target soh -j$(nproc)
 
       - name: Upload Switch NRO Artifact
         uses: actions/upload-artifact@v4
