@@ -1,0 +1,28 @@
+name: Build Switch CN NRO
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-switch:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkita64:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Fix Git Dubious Ownership
+        run: git config --global --add safe.directory '*'
+      - name: Install Switch Dependencies & Build NRO
+        run: |
+          dkp-pacman -Syu --noconfirm
+          dkp-pacman -S --noconfirm switch-dev switch-sdl2 switch-glad switch-libpng switch-freetype switch-zlib switch-bzip2 switch-curl
+          cmake -B build-switch -DSWITCH=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-switch --target soh.nro -j$(nproc)
+      - name: Upload Switch NRO Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: soh-switch-cn
+          path: build-switch/soh.nro
