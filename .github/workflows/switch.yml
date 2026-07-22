@@ -90,15 +90,7 @@ jobs:
           done
 
           # Patch ImGui loader: wrap in #ifndef __SWITCH__
-          python3 -c "
-import glob
-for f in glob.glob('build-switch/_deps/**/imgui_impl_opengl3_loader.h', recursive=True):
-    with open(f) as fh: orig = fh.read()
-    if '#ifndef __SWITCH__' not in orig:
-        new_content = '#ifndef __SWITCH__\n' + orig + '\n#endif // !__SWITCH__\n'
-        with open(f, 'w') as fh: fh.write(new_content)
-        print('Patched ImGui loader:', f)
-"
+          python3 -c 'import glob; [open(f, "w").write("#ifndef __SWITCH__\n" + open(f).read() + "\n#endif\n") for f in glob.glob("build-switch/_deps/**/imgui_impl_opengl3_loader.h", recursive=True)]'
 
       - name: Build Switch NRO
         run: |
