@@ -22,8 +22,8 @@ jobs:
       - name: Build Switch NRO
         run: |
           source /etc/profile.d/devkit-env.sh
-          $DEVKITPRO/portlibs/switch/bin/dkp-cmake -B build-switch -DSWITCH=ON -DCMAKE_BUILD_TYPE=Release
-          cmake --build build-switch --target soh.nro -j$(nproc)
+          cmake -B build-switch -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake -DSWITCH=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-switch --target soh -j$(nproc)
       - name: Upload Switch NRO Artifact
         uses: actions/upload-artifact@v4
         with:
