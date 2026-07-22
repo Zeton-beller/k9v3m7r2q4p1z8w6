@@ -17,7 +17,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y curl gpg libgl1-mesa-dev libglu1-mesa-dev
           sudo mkdir -p /etc/apt/keyrings
-          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" https://apt.devkitpro.org/devkitpro-keyring.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/devkitpro.gpg
+          sudo curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -o /etc/apt/keyrings/devkitpro.gpg https://apt.devkitpro.org/devkitpro-keyring.gpg
           echo "deb [signed-by=/etc/apt/keyrings/devkitpro.gpg] https://apt.devkitpro.org/stable devkitpro main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
           sudo apt-get update
           sudo apt-get install -y devkitpro-pacman
