@@ -19,10 +19,16 @@ jobs:
           sudo apt install -y devkitpro-pacman
           sudo dkp-pacman -Syu --noconfirm
           sudo dkp-pacman -S --noconfirm switch-dev switch-sdl2 switch-glad switch-libpng switch-freetype switch-zlib switch-bzip2 switch-curl
+      - name: Build and Install libzip for Switch
+        run: |
+          source /etc/profile.d/devkit-env.sh
+          git clone --depth 1 https://github.com/nih-at/libzip.git /tmp/libzip
+          $DEVKITPRO/portlibs/switch/bin/dkp-cmake -B /tmp/libzip/build -S /tmp/libzip -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch -DBUILD_SHARED_LIBS=OFF -DENABLE_COMMONCRYPTO=OFF -DENABLE_GNUTLS=OFF -DENABLE_MBEDTLS=OFF -DENABLE_OPENSSL=OFF -DENABLE_WINDOWS_CRYPTO=OFF -DBUILD_TOOLS=OFF -DBUILD_REGRESS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOC=OFF
+          sudo cmake --build /tmp/libzip/build --target install -j$(nproc)
       - name: Build Switch NRO
         run: |
           source /etc/profile.d/devkit-env.sh
-          cmake -B build-switch -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake -DSWITCH=ON -DCMAKE_BUILD_TYPE=Release
+          $DEVKITPRO/portlibs/switch/bin/dkp-cmake -B build-switch -DSWITCH=ON -DCMAKE_BUILD_TYPE=Release
           cmake --build build-switch --target soh -j$(nproc)
       - name: Upload Switch NRO Artifact
         uses: actions/upload-artifact@v4
