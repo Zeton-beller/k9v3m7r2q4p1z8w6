@@ -15,14 +15,28 @@ jobs:
 
       - name: Install devkitPro & Switch Dependencies
         run: |
-          sudo mkdir -p /usr/local/share/keyrings
+          sudo mkdir -p /usr/local/share/keyrings /opt/devkitpro/pacman/etc
           curl -fsSL https://apt.devkitpro.org/devkitpro-pub.gpg | sudo tee /usr/local/share/keyrings/devkitpro-pub.gpg > /dev/null
           echo "deb [trusted=yes] https://apt.devkitpro.org/ stable main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
+          
+          # 预先配置 pacman.conf 注入 User-Agent 伪装标头，彻底消除 Cloudflare 403
+          cat << 'EOF' | sudo tee /opt/devkitpro/pacman/etc/pacman.conf
+[options]
+HoldPkg     = pacman glibc
+Architecture = auto
+SigLevel = Never
+LocalFileSigLevel = Optional
+XferCommand = /usr/bin/curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" %u -o %o
+
+[dkp-libs]
+Server = https://pkg.devkitpro.org/packages
+
+[dkp-linux]
+Server = https://pkg.devkitpro.org/packages/linux
+EOF
+
           sudo apt update
           sudo apt install -y devkitpro-pacman || true
-          # 兼容处理 Cloudflare 防刷机制
-          sudo sed -i 's/SigLevel.*/SigLevel = Never/g' /opt/devkitpro/pacman/etc/pacman.conf 2>/dev/null || true
-          sudo bash -c 'grep -q "XferCommand" /opt/devkitpro/pacman/etc/pacman.conf || echo "XferCommand = /usr/bin/curl -L -A \"Mozilla/5.0\" %u -o %o" >> /opt/devkitpro/pacman/etc/pacman.conf' 2>/dev/null || true
           sudo dkp-pacman -Sy --noconfirm
           sudo dkp-pacman -S --noconfirm switch-dev switch-sdl2 switch-glad switch-libpng switch-freetype switch-zlib switch-bzip2 switch-curl
 
