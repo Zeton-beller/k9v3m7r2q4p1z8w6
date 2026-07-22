@@ -15,8 +15,8 @@ jobs:
       - name: Install devkitPro & Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget libgl1-mesa-dev libglu1-mesa-dev
-          wget https://apt.devkitpro.org/install-devkitpro-pacman
+          sudo apt-get install -y curl libgl1-mesa-dev libglu1-mesa-dev
+          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -o install-devkitpro-pacman https://apt.devkitpro.org/install-devkitpro-pacman
           chmod +x install-devkitpro-pacman
           sudo ./install-devkitpro-pacman
           export PATH=/opt/devkitpro/pacman/bin:$PATH
