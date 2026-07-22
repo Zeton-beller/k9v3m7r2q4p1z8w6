@@ -63,6 +63,26 @@ jobs:
             -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_BUILD_EXAMPLE=OFF
           sudo -E cmake --build /tmp/spdlog/build --target install
 
+      - name: Patch source for Switch compatibility
+        run: |
+          # Patch StormLib: define ftruncate for Switch (no POSIX ftruncate on Switch)
+          STORMPORT="libultraship/extern/StormLib/src/StormPort.h"
+          if [ -f "$STORMPORT" ]; then
+            sed -i 's|#define ftruncate64 ftruncate|#ifndef __SWITCH__\n#define ftruncate64 ftruncate\n#endif|g' "$STORMPORT"
+            echo "Patched StormPort.h"
+          fi
+          # Also search in ZAPDTR
+          find . -name "StormPort.h" | while read f; do
+            sed -i 's|#define ftruncate64 ftruncate|#ifndef __SWITCH__\n#define ftruncate64 ftruncate\n#endif|g' "$f"
+            echo "Patched: $f"
+          done
+
+          # Patch ImGui opengl3 loader: disable dlfcn.h on Switch
+          find . -name "imgui_impl_opengl3_loader.h" | while read f; do
+            sed -i 's|#include <dlfcn.h>|#ifndef __SWITCH__\n#include <dlfcn.h>\n#endif|g' "$f"
+            echo "Patched: $f"
+          done
+
       - name: Build Switch NRO
         run: |
           source /etc/profile.d/devkit-env.sh
