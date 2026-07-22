@@ -14,9 +14,7 @@ jobs:
           submodules: recursive
       - name: Install devkitPro & Dependencies
         run: |
-          sudo mkdir -p /etc/apt/trusted.gpg.d
-          sudo curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -o /etc/apt/trusted.gpg.d/devkitpro.asc https://apt.devkitpro.org/devkitpro-keyring.gpg
-          echo "deb https://apt.devkitpro.org/ stable main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
+          echo "deb [trusted=yes] https://apt.devkitpro.org/ stable main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
           sudo apt update
           sudo apt install -y devkitpro-pacman
           sudo dkp-pacman -Syu --noconfirm
