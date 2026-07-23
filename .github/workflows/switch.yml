@@ -15,15 +15,31 @@ jobs:
 
       - name: Install devkitPro & Switch Dependencies
         run: |
-          sudo mkdir -p /usr/local/share/keyrings
+          sudo mkdir -p /usr/local/share/keyrings /opt/devkitpro/pacman/etc
           curl -fsSL https://apt.devkitpro.org/devkitpro-pub.gpg | sudo tee /usr/local/share/keyrings/devkitpro-pub.gpg > /dev/null
           echo "deb [trusted=yes] https://apt.devkitpro.org/ stable main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
+          
+          # 【时序修正】：必须在 apt install 触发 dpkg 联网前，预先装载成组伪装配置 (遵循 AGENTS.md 成组语法)
+          {
+            echo '[options]'
+            echo 'HoldPkg     = pacman glibc'
+            echo 'Architecture = auto'
+            echo 'SigLevel = Never'
+            echo 'LocalFileSigLevel = Optional'
+            echo 'XferCommand = /usr/bin/curl -fsSL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" --retry 5 %u -o %o'
+            echo ''
+            echo '[dkp-libs]'
+            echo 'Server = https://pkg.devkitpro.org/packages'
+            echo ''
+            echo '[dkp-linux]'
+            echo 'Server = https://pkg.devkitpro.org/packages/linux'
+            echo ''
+            echo '[dkp-cross]'
+            echo 'Server = https://pkg.devkitpro.org/packages'
+          } | sudo tee /opt/devkitpro/pacman/etc/pacman.conf > /dev/null
+
           sudo apt update
           sudo apt install -y devkitpro-pacman || true
-
-          # 动态修补官方原装 pacman.conf: 允许免签名并注入防 403 伪装 User-Agent
-          sudo sed -i 's/SigLevel.*/SigLevel = Never/g' /opt/devkitpro/pacman/etc/pacman.conf
-          sudo bash -c 'grep -q "XferCommand" /opt/devkitpro/pacman/etc/pacman.conf || echo "XferCommand = /usr/bin/curl -fsSL -A \"Mozilla/5.0 (Windows NT 10.0; Win64; x64)\" --retry 5 %u -o %o" >> /opt/devkitpro/pacman/etc/pacman.conf'
 
           # 清理旧缓存后同步官方数据库并安装 Switch 组件
           sudo rm -rf /opt/devkitpro/pacman/var/lib/pacman/sync/*
