@@ -54,7 +54,7 @@ jobs:
           # 4. Clone spdlog
           git clone --depth 1 https://github.com/gabime/spdlog.git /tmp/spdlog
 
-      - name: Patch spdlog os-inl.h for Switch
+      - name: Patch spdlog & bundled fmt for Switch
         shell: python
         run: |
           path = "/tmp/spdlog/include/spdlog/details/os-inl.h"
@@ -64,6 +64,10 @@ jobs:
           text = text.replace("::fsync(fileno(fp))", "0")
           text = text.replace("::fileno(f)", "0")
           open(path, "w").write(text)
+
+          fmt_path = "/tmp/spdlog/include/spdlog/fmt/bundled/format-inl.h"
+          fmt_text = open(fmt_path).read().replace("putc_unlocked", "fputc")
+          open(fmt_path, "w").write(fmt_text)
 
       - name: Compile and Install spdlog
         run: |
@@ -82,7 +86,7 @@ jobs:
 
           cat > /tmp/switch-init.cmake << 'CMAKEINIT'
           set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE "LINKER:--whole-archive" "<LINK_ITEM>" "LINKER:--no-whole-archive" CACHE STRING "" FORCE)
-          set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_Supported TRUE CACHE BOOL "" FORCE)
+          set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE CACHE BOOL "" FORCE)
           CMAKEINIT
 
           cmake -B build-switch \
