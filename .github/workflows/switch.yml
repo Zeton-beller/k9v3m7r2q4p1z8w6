@@ -21,7 +21,20 @@ jobs:
       - name: Build Switch NRO
         run: |
           . /etc/profile.d/devkit-env.sh
-          $DEVKITPRO/portlibs/switch/bin/dkp-cmake -B build-switch -DSWITCH=ON -DCMAKE_BUILD_TYPE=Release
+          export DEVKITPRO=/opt/devkitpro
+
+          cat > /tmp/switch-init.cmake << 'CMAKEINIT'
+          set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE "LINKER:--whole-archive" "<LINK_ITEM>" "LINKER:--no-whole-archive" CACHE STRING "" FORCE)
+          set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE CACHE BOOL "" FORCE)
+          CMAKEINIT
+
+          # 标准 cmake 命令 + devkitpro 工具链 + 端口库搜索路径
+          cmake -B build-switch \
+            -C /tmp/switch-init.cmake \
+            -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
+            -DCMAKE_PREFIX_PATH=$DEVKITPRO/portlibs/switch \
+            -DSWITCH=ON \
+            -DCMAKE_BUILD_TYPE=Release
           
           # Patch StormLib: ftruncate not available on Switch
           find build-switch/_deps -name "StormPort.h" 2>/dev/null | while read f; do
