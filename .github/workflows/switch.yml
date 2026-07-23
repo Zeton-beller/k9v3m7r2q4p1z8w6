@@ -109,7 +109,7 @@ jobs:
             -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_BUILD_EXAMPLE=OFF
           cmake --build /tmp/spdlog/build --target install -j$(nproc)
 
-      - name: Configure and Build Switch NRO
+      - name: Configure Switch NRO
         run: |
           . /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
@@ -135,11 +135,11 @@ jobs:
             -DSWITCH=ON \
             -DCMAKE_BUILD_TYPE=Release
 
-      - name: Patch StormLib StormPort.h for Switch POSIX maps
+      - name: Patch StormLib StormPort.h BEFORE Compilation
         shell: python
         run: |
           import glob
-          patch = "\n#ifdef __SWITCH__\n#include <sys/types.h>\ntypedef off_t off64_t;\n#define lseek64 lseek\n#define ftruncate64(fd, sz) (0)\n#endif\n"
+          patch = "\n#ifdef __SWITCH__\n#include <sys/types.h>\n#include <sys/stat.h>\n#include <fcntl.h>\ntypedef off_t off64_t;\n#define lseek64 lseek\n#define ftruncate64(fd, sz) (0)\n#ifndef O_LARGEFILE\n#define O_LARGEFILE 0\n#endif\n#ifndef stat64\n#define stat64 stat\n#endif\n#ifndef fstat64\n#define fstat64 fstat\n#endif\n#endif\n"
           for f in glob.glob("build-switch/_deps/**/StormPort.h", recursive=True):
               open(f, "a").write(patch)
               print("Patched:", f)
