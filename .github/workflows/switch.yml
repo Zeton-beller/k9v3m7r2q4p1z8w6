@@ -54,7 +54,6 @@ jobs:
           # 4. Clone spdlog
           git clone --depth 1 https://github.com/gabime/spdlog.git /tmp/spdlog
 
-      # 采用 GitHub Actions 官方 shell: python 规范
       - name: Patch spdlog os-inl.h for Switch
         shell: python
         run: |
@@ -63,6 +62,7 @@ jobs:
           text = text.replace("tm.tm_gmtoff", "0")
           text = text.replace("::isatty(fileno(file))", "false")
           text = text.replace("::fsync(fileno(fp))", "0")
+          text = text.replace("::fileno(f)", "0")
           open(path, "w").write(text)
 
       - name: Compile and Install spdlog
@@ -82,7 +82,7 @@ jobs:
 
           cat > /tmp/switch-init.cmake << 'CMAKEINIT'
           set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE "LINKER:--whole-archive" "<LINK_ITEM>" "LINKER:--no-whole-archive" CACHE STRING "" FORCE)
-          set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE CACHE BOOL "" FORCE)
+          set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_Supported TRUE CACHE BOOL "" FORCE)
           CMAKEINIT
 
           cmake -B build-switch \
