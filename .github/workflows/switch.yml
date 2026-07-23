@@ -96,6 +96,16 @@ jobs:
           cat > /tmp/switch-init.cmake << 'CMAKEINIT'
           set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE "LINKER:--whole-archive" "<LINK_ITEM>" "LINKER:--no-whole-archive" CACHE STRING "" FORCE)
           set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE CACHE BOOL "" FORCE)
+
+          if(NOT TARGET ZLIB::ZLIB)
+            add_library(ZLIB::ZLIB UNKNOWN IMPORTED)
+            set_target_properties(ZLIB::ZLIB PROPERTIES IMPORTED_LOCATION "/opt/devkitpro/portlibs/switch/lib/libz.a" INTERFACE_INCLUDE_DIRECTORIES "/opt/devkitpro/portlibs/switch/include")
+          endif()
+
+          if(NOT TARGET tinyxml2::tinyxml2)
+            add_library(tinyxml2::tinyxml2 UNKNOWN IMPORTED)
+            set_target_properties(tinyxml2::tinyxml2 PROPERTIES IMPORTED_LOCATION "/opt/devkitpro/portlibs/switch/lib/libtinyxml2.a" INTERFACE_INCLUDE_DIRECTORIES "/opt/devkitpro/portlibs/switch/include")
+          endif()
           CMAKEINIT
 
           cmake -B build-switch \
