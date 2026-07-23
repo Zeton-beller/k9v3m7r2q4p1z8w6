@@ -29,6 +29,8 @@ jobs:
           key: ccache-switch-${{ github.sha }}
           restore-keys: |
             ccache-switch-
+            ccache-Linux-
+            ccache-
           save-always: true
 
       - name: Build and Install Custom Switch Libraries (libzip, tinyxml2, json)
