@@ -216,6 +216,9 @@ jobs:
                       patched = content.replace(
                           "#elif defined(__linux__)\nvoid __assert(const char* exp, const char* file, s32 line) __THROW;",
                           "#elif defined(__linux__) && !defined(__aarch64__)\nvoid __assert(const char* exp, const char* file, s32 line) __THROW;"
+                      ).replace(
+                          "#elif !defined(__APPLE__) && !defined(__SWITCH__) && !defined(__OpenBSD__)\nvoid __assert(const char* exp, const char* file, s32 line);",
+                          "#elif !defined(__APPLE__) && !defined(__SWITCH__) && !defined(__OpenBSD__) && !defined(__aarch64__)\nvoid __assert(const char* exp, const char* file, s32 line);"
                       )
                       if patched != content:
                           open(f, "w").write(patched)
