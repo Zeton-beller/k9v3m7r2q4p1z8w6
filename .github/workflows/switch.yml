@@ -182,27 +182,28 @@ jobs:
         shell: python
         run: |
           import os
-          stub_header = """
-#ifdef __SWITCH__
-#ifndef ImGui_ImplOpenGL3_Init
-#define ImGui_ImplOpenGL3_Init(...) (true)
-#define ImGui_ImplOpenGL3_Shutdown(...) ((void)0)
-#define ImGui_ImplOpenGL3_NewFrame(...) ((void)0)
-#define ImGui_ImplOpenGL3_RenderDrawData(...) ((void)0)
-#define ImGui_ImplSDL2_InitForOpenGL(...) (true)
-#define ImGui_ImplSDL2_Shutdown(...) ((void)0)
-#define ImGui_ImplSDL2_NewFrame(...) ((void)0)
-#define ImGui_ImplSDL2_ProcessEvent(...) (true)
-#endif
-#endif
-"""
+          lines = [
+              "#ifdef __SWITCH__",
+              "#ifndef ImGui_ImplOpenGL3_Init",
+              "#define ImGui_ImplOpenGL3_Init(...) (true)",
+              "#define ImGui_ImplOpenGL3_Shutdown(...) ((void)0)",
+              "#define ImGui_ImplOpenGL3_NewFrame(...) ((void)0)",
+              "#define ImGui_ImplOpenGL3_RenderDrawData(...) ((void)0)",
+              "#define ImGui_ImplSDL2_InitForOpenGL(...) (true)",
+              "#define ImGui_ImplSDL2_Shutdown(...) ((void)0)",
+              "#define ImGui_ImplSDL2_NewFrame(...) ((void)0)",
+              "#define ImGui_ImplSDL2_ProcessEvent(...) (true)",
+              "#endif",
+              "#endif"
+          ]
+          stub_header = "\n".join(lines) + "\n"
           for root, dirs, files in os.walk("."):
               for file in files:
                   if file == "Gui.cpp":
                       f = os.path.join(root, file)
                       content = open(f).read()
                       if "#define ImGui_ImplOpenGL3_Init" not in content:
-                          open(f, "w").write(stub_header + "\n" + content)
+                          open(f, "w").write(stub_header + content)
                           print("Injected stubs into:", f)
 
       - name: Patch all ColliderQuadDim member names in soh codebase
