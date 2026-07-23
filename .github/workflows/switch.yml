@@ -19,21 +19,21 @@ jobs:
           curl -fsSL https://apt.devkitpro.org/devkitpro-pub.gpg | sudo tee /usr/local/share/keyrings/devkitpro-pub.gpg > /dev/null
           echo "deb [trusted=yes] https://apt.devkitpro.org/ stable main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
           
-          # 预先写入 pacman.conf 配置 User-Agent 伪装标头，彻底消除 Cloudflare 403
-          sudo bash -c 'cat > /opt/devkitpro/pacman/etc/pacman.conf << "PACMANEOF"
-[options]
-HoldPkg     = pacman glibc
-Architecture = auto
-SigLevel = Never
-LocalFileSigLevel = Optional
-XferCommand = /usr/bin/curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" %u -o %o
-
-[dkp-libs]
-Server = https://pkg.devkitpro.org/packages
-
-[dkp-linux]
-Server = https://pkg.devkitpro.org/packages/linux
-PACMANEOF'
+          # GitHub Actions 官方权威推荐的标准成组管道流 (Grouped Block) 语法
+          {
+            echo '[options]'
+            echo 'HoldPkg     = pacman glibc'
+            echo 'Architecture = auto'
+            echo 'SigLevel = Never'
+            echo 'LocalFileSigLevel = Optional'
+            echo 'XferCommand = /usr/bin/curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" %u -o %o'
+            echo ''
+            echo '[dkp-libs]'
+            echo 'Server = https://pkg.devkitpro.org/packages'
+            echo ''
+            echo '[dkp-linux]'
+            echo 'Server = https://pkg.devkitpro.org/packages/linux'
+          } | sudo tee /opt/devkitpro/pacman/etc/pacman.conf > /dev/null
 
           sudo apt update
           sudo apt install -y devkitpro-pacman || true
