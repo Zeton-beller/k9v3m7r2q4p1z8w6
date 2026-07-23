@@ -133,15 +133,19 @@ jobs:
           for f in files:
               open(f, "w").write("#ifndef __SWITCH__\n" + open(f).read() + "\n#endif\n")
 
-      - name: Patch Gui.cpp desktop ImGui calls for Switch
+      - name: Patch Gui.cpp all desktop ImGui calls for Switch
         shell: python
         run: |
           f = "libultraship/src/ship/window/gui/Gui.cpp"
           content = open(f).read()
-          content = content.replace("ImGui_ImplOpenGL3_NewFrame();", "#ifndef __SWITCH__\nImGui_ImplOpenGL3_NewFrame();\n#endif")
-          content = content.replace("ImGui_ImplSDL2_NewFrame();", "#ifndef __SWITCH__\nImGui_ImplSDL2_NewFrame();\n#endif")
-          content = content.replace("ImGui_ImplOpenGL3_RenderDrawData(data);", "#ifndef __SWITCH__\nImGui_ImplOpenGL3_RenderDrawData(data);\n#endif")
-          open(f, "w").write(content)
+          lines = content.splitlines()
+          new_lines = []
+          for line in lines:
+              if ("ImGui_ImplOpenGL3_" in line or "ImGui_ImplSDL2_" in line) and "#ifndef" not in line:
+                  new_lines.append(f"#ifndef __SWITCH__\n{line}\n#endif")
+              else:
+                  new_lines.append(line)
+          open(f, "w").write("\n".join(new_lines))
 
       - name: Build Switch NRO Binary
         run: |
