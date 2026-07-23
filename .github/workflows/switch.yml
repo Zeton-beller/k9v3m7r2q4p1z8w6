@@ -51,11 +51,12 @@ jobs:
             -DJSON_BuildTests=OFF
           cmake --build /tmp/json/build --target install
 
-          # 4. spdlog
+          # 4. spdlog (Switch 嵌入式 Header-Only 模式)
           git clone --depth 1 https://github.com/gabime/spdlog.git /tmp/spdlog
           cmake -B /tmp/spdlog/build -S /tmp/spdlog \
             -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
             -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
+            -DSPDLOG_HEADER_ONLY=ON \
             -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_BUILD_EXAMPLE=OFF
           cmake --build /tmp/spdlog/build --target install
 
@@ -82,11 +83,11 @@ jobs:
           done
           python3 -c 'import glob; [open(f, "w").write("#ifndef __SWITCH__\n" + open(f).read() + "\n#endif\n") for f in glob.glob("build-switch/_deps/**/imgui_impl_opengl3_loader.h", recursive=True)]'
 
-          cmake --build build-switch --target soh.nro -j$(nproc)
+          cmake --build build-switch --target soh -j$(nproc)
 
       - name: Upload Switch NRO Artifact
         uses: actions/upload-artifact@v4
         with:
           name: soh-switch-cn
-          path: build-switch/soh.nro
+          path: build-switch/soh/soh.nro
           retention-days: 1
