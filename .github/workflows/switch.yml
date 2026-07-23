@@ -18,7 +18,48 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Build Switch NRO
+      - name: Build and Install Custom Switch Libraries (libzip, tinyxml2, json, spdlog)
+        run: |
+          . /etc/profile.d/devkit-env.sh
+          export DEVKITPRO=/opt/devkitpro
+
+          # 1. libzip
+          git clone --depth 1 https://github.com/nih-at/libzip.git /tmp/libzip
+          cmake -B /tmp/libzip/build -S /tmp/libzip \
+            -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
+            -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
+            -DBUILD_SHARED_LIBS=OFF -DBUILD_OSSFUZZ=OFF \
+            -DENABLE_COMMONCRYPTO=OFF -DENABLE_GNUTLS=OFF \
+            -DENABLE_MBEDTLS=OFF -DENABLE_OPENSSL=OFF \
+            -DENABLE_WINDOWS_CRYPTO=OFF -DBUILD_TOOLS=OFF \
+            -DBUILD_REGRESS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOC=OFF
+          cmake --build /tmp/libzip/build --target install -j$(nproc)
+
+          # 2. tinyxml2
+          git clone --depth 1 https://github.com/leethomason/tinyxml2.git /tmp/tinyxml2
+          cmake -B /tmp/tinyxml2/build -S /tmp/tinyxml2 \
+            -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
+            -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
+            -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF
+          cmake --build /tmp/tinyxml2/build --target install -j$(nproc)
+
+          # 3. nlohmann_json
+          git clone --depth 1 https://github.com/nlohmann/json.git /tmp/json
+          cmake -B /tmp/json/build -S /tmp/json \
+            -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
+            -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
+            -DJSON_BuildTests=OFF
+          cmake --build /tmp/json/build --target install
+
+          # 4. spdlog
+          git clone --depth 1 https://github.com/gabime/spdlog.git /tmp/spdlog
+          cmake -B /tmp/spdlog/build -S /tmp/spdlog \
+            -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
+            -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
+            -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_BUILD_EXAMPLE=OFF
+          cmake --build /tmp/spdlog/build --target install
+
+      - name: Configure and Build Switch NRO
         run: |
           . /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
@@ -28,7 +69,6 @@ jobs:
           set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE CACHE BOOL "" FORCE)
           CMAKEINIT
 
-          # 标准 cmake 命令 + devkitpro 工具链 + 端口库搜索路径
           cmake -B build-switch \
             -C /tmp/switch-init.cmake \
             -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
@@ -36,12 +76,10 @@ jobs:
             -DSWITCH=ON \
             -DCMAKE_BUILD_TYPE=Release
           
-          # Patch StormLib: ftruncate not available on Switch
+          # Patch StormLib & ImGui loader
           find build-switch/_deps -name "StormPort.h" 2>/dev/null | while read f; do
             sed -i 's|#define ftruncate64 ftruncate|#ifdef __SWITCH__\n#define ftruncate64(fd,sz) (0)\n#else\n#define ftruncate64 ftruncate\n#endif|g' "$f"
           done
-
-          # Patch ImGui loader: wrap in #ifndef __SWITCH__
           python3 -c 'import glob; [open(f, "w").write("#ifndef __SWITCH__\n" + open(f).read() + "\n#endif\n") for f in glob.glob("build-switch/_deps/**/imgui_impl_opengl3_loader.h", recursive=True)]'
 
           cmake --build build-switch --target soh.nro -j$(nproc)
