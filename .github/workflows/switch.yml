@@ -213,15 +213,15 @@ jobs:
                   if file == "functions.h":
                       f = os.path.join(root, file)
                       content = open(f).read()
-                      lines = content.splitlines()
-                      new_lines = []
-                      for line in lines:
-                          if "void __assert(" in line and "SWITCH" not in line:
-                              new_lines.append(f"#if !defined(__SWITCH__) && !defined(SWITCH)\n{line}\n#endif")
-                          else:
-                              new_lines.append(line)
-                      open(f, "w").write("\n".join(new_lines))
-                      print("Patched functions.h:", f)
+                      patched = content.replace(
+                          "#elif defined(__linux__)\nvoid __assert(const char* exp, const char* file, s32 line) __THROW;",
+                          "#elif defined(__linux__) && !defined(__aarch64__)\nvoid __assert(const char* exp, const char* file, s32 line) __THROW;"
+                      )
+                      if patched != content:
+                          open(f, "w").write(patched)
+                          print("Patched functions.h:", f)
+                      else:
+                          print("No match found in:", f)
 
       - name: Patch all ColliderQuadDim member names in soh codebase
         shell: python
