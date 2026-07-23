@@ -18,6 +18,14 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Cache C++ Build Objects (ccache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-switch-${{ github.sha }}
+          restore-keys: |
+            ccache-switch-
+
       - name: Build and Install Custom Switch Libraries (libzip, tinyxml2, json)
         run: |
           . /etc/profile.d/devkit-env.sh
@@ -115,6 +123,8 @@ jobs:
             -C /tmp/switch-init.cmake \
             -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
             -DCMAKE_PREFIX_PATH=$DEVKITPRO/portlibs/switch \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DSWITCH=ON \
             -DCMAKE_BUILD_TYPE=Release
           
