@@ -176,13 +176,20 @@ jobs:
                               open(path, "w").write(content)
                       except Exception: pass
 
-      - name: Patch old SwitchImpl.h includes to standard switch.h
+      - name: Patch OTRGlobals.cpp and SohGui.cpp legacy platform headers
         shell: python
         run: |
-          for f in ["soh/soh/OTRGlobals.cpp", "soh/soh/SohGui/SohGui.cpp"]:
-              content = open(f).read()
-              content = content.replace("port/switch/SwitchImpl.h", "switch.h")
-              open(f, "w").write(content)
+          f1 = "soh/soh/OTRGlobals.cpp"
+          c1 = open(f1).read()
+          c1 = c1.replace('#if not defined(__SWITCH__) && not defined(__WIIU__)\n#include "Extractor/Extract.h"\n#endif', '#include "Extractor/Extract.h"')
+          c1 = c1.replace('Ship::Switch::Init(Ship::PreInitPhase);', '// Ship::Switch::Init handled by libultraship')
+          c1 = c1.replace('#include <port/switch/SwitchImpl.h>', '#include <switch.h>')
+          open(f1, "w").write(c1)
+
+          f2 = "soh/soh/SohGui/SohGui.cpp"
+          c2 = open(f2).read()
+          c2 = c2.replace('#include <port/switch/SwitchImpl.h>', '#include <switch.h>')
+          open(f2, "w").write(c2)
 
       - name: Build Switch NRO Binary
         run: |
