@@ -117,6 +117,8 @@ jobs:
           cat > /tmp/switch-init.cmake << 'CMAKEINIT'
           set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE "LINKER:--whole-archive" "<LINK_ITEM>" "LINKER:--no-whole-archive" CACHE STRING "" FORCE)
           set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE CACHE BOOL "" FORCE)
+          set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -Wno-int-conversion -Wno-incompatible-pointer-types" CACHE STRING "" FORCE)
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -Wno-int-conversion -Wno-incompatible-pointer-types" CACHE STRING "" FORCE)
 
           if(NOT TARGET ZLIB::ZLIB)
             add_library(ZLIB::ZLIB UNKNOWN IMPORTED GLOBAL)
@@ -176,6 +178,23 @@ jobs:
                               content = content.replace('dim.quad[', 'dim.quad_t[')
                               open(path, "w").write(content)
                       except Exception: pass
+
+      - name: Redirect libultra types.h directly to devkitPro switch/types.h on Switch
+        shell: python
+        run: |
+          import os
+          for root, dirs, files in os.walk("."):
+              for f in files:
+                  if f == "types.h" and "libultra" in root:
+                      p = os.path.join(root, f)
+                      try:
+                          c = open(p).read()
+                          if "#ifdef __SWITCH__\n#include <switch/types.h>\n#else" not in c:
+                              c = "#ifdef __SWITCH__\n#include <switch/types.h>\n#else\n" + c + "\n#endif\n"
+                              open(p, "w").write(c)
+                              print("Redirected:", p)
+                      except Exception as e:
+                          print("Error redirecting", p, e)
 
       - name: Patch OTRGlobals.cpp and SohGui.cpp to include switch.h at line 1
         shell: python
