@@ -133,6 +133,16 @@ jobs:
           for f in files:
               open(f, "w").write("#ifndef __SWITCH__\n" + open(f).read() + "\n#endif\n")
 
+      - name: Patch Gui.cpp desktop ImGui calls for Switch
+        shell: python
+        run: |
+          f = "libultraship/src/ship/window/gui/Gui.cpp"
+          content = open(f).read()
+          content = content.replace("ImGui_ImplOpenGL3_NewFrame();", "#ifndef __SWITCH__\nImGui_ImplOpenGL3_NewFrame();\n#endif")
+          content = content.replace("ImGui_ImplSDL2_NewFrame();", "#ifndef __SWITCH__\nImGui_ImplSDL2_NewFrame();\n#endif")
+          content = content.replace("ImGui_ImplOpenGL3_RenderDrawData(data);", "#ifndef __SWITCH__\nImGui_ImplOpenGL3_RenderDrawData(data);\n#endif")
+          open(f, "w").write(content)
+
       - name: Build Switch NRO Binary
         run: |
           . /etc/profile.d/devkit-env.sh
