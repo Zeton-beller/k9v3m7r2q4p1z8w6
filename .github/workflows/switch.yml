@@ -117,8 +117,8 @@ jobs:
           cat > /tmp/switch-init.cmake << 'CMAKEINIT'
           set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE "LINKER:--whole-archive" "<LINK_ITEM>" "LINKER:--no-whole-archive" CACHE STRING "" FORCE)
           set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE CACHE BOOL "" FORCE)
-          set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Doff64_t=off_t -Dlseek64=lseek -Dstat64=stat -Dfstat64=fstat -DO_LARGEFILE=0 -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -Wno-int-conversion -Wno-incompatible-pointer-types" CACHE STRING "" FORCE)
-          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Doff64_t=off_t -Dlseek64=lseek -Dstat64=stat -Dfstat64=fstat -DO_LARGEFILE=0 -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -Wno-int-conversion -Wno-incompatible-pointer-types" CACHE STRING "" FORCE)
+          set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Doff64_t=off_t -Dlseek64=lseek -Dstat64=stat -Dfstat64=fstat -Dftruncate64=ftruncate -DO_LARGEFILE=0 -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -Wno-int-conversion -Wno-incompatible-pointer-types" CACHE STRING "" FORCE)
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Doff64_t=off_t -Dlseek64=lseek -Dstat64=stat -Dfstat64=fstat -Dftruncate64=ftruncate -DO_LARGEFILE=0 -Wno-error=int-conversion -Wno-error=incompatible-pointer-types -Wno-int-conversion -Wno-incompatible-pointer-types" CACHE STRING "" FORCE)
 
           if(NOT TARGET ZLIB::ZLIB)
             add_library(ZLIB::ZLIB UNKNOWN IMPORTED GLOBAL)
