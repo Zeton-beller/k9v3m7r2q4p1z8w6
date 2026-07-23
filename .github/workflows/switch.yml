@@ -178,24 +178,32 @@ jobs:
           for f in files:
               open(f, "w").write("#ifndef __SWITCH__\n" + open(f).read() + "\n#endif\n")
 
-      - name: Patch Gui.cpp all desktop ImGui calls for Switch
+      - name: Inject ImGui Desktop Stub Macros into Gui.cpp for Switch
         shell: python
         run: |
           import os
+          stub_header = """
+#ifdef __SWITCH__
+#ifndef ImGui_ImplOpenGL3_Init
+#define ImGui_ImplOpenGL3_Init(...) (true)
+#define ImGui_ImplOpenGL3_Shutdown(...) ((void)0)
+#define ImGui_ImplOpenGL3_NewFrame(...) ((void)0)
+#define ImGui_ImplOpenGL3_RenderDrawData(...) ((void)0)
+#define ImGui_ImplSDL2_InitForOpenGL(...) (true)
+#define ImGui_ImplSDL2_Shutdown(...) ((void)0)
+#define ImGui_ImplSDL2_NewFrame(...) ((void)0)
+#define ImGui_ImplSDL2_ProcessEvent(...) (true)
+#endif
+#endif
+"""
           for root, dirs, files in os.walk("."):
               for file in files:
                   if file == "Gui.cpp":
                       f = os.path.join(root, file)
                       content = open(f).read()
-                      lines = content.splitlines()
-                      new_lines = []
-                      for line in lines:
-                          if ("ImGui_ImplOpenGL3_" in line or "ImGui_ImplSDL2_" in line) and "#ifndef __SWITCH__" not in line:
-                              new_lines.append(f"#ifndef __SWITCH__\n{line}\n#endif")
-                          else:
-                              new_lines.append(line)
-                      open(f, "w").write("\n".join(new_lines))
-                      print("Patched Gui.cpp:", f)
+                      if "#define ImGui_ImplOpenGL3_Init" not in content:
+                          open(f, "w").write(stub_header + "\n" + content)
+                          print("Injected stubs into:", f)
 
       - name: Patch all ColliderQuadDim member names in soh codebase
         shell: python
