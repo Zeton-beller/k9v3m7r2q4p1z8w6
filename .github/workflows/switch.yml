@@ -135,7 +135,7 @@ jobs:
             -DSWITCH=ON \
             -DCMAKE_BUILD_TYPE=Release
 
-      - name: Patch StormLib StormPort.h BEFORE Compilation
+      - name: Patch StormLib for Switch BEFORE Compilation
         shell: python
         run: |
           import glob
@@ -155,14 +155,18 @@ jobs:
               "#ifndef fstat64\n"
               "#define fstat64 fstat\n"
               "#endif\n"
-              "#ifdef __cplusplus\nextern \"C\" {\n#endif\n"
-              "static inline int ftruncate64(int fd, off_t len) { (void)fd; (void)len; return 0; }\n"
-              "#ifdef __cplusplus\n}\n#endif\n"
               "#endif\n"
           )
           for f in glob.glob("build-switch/_deps/**/StormPort.h", recursive=True):
               open(f, "a").write(patch)
               print("Patched:", f)
+
+          for f in glob.glob("build-switch/_deps/**/FileStream.cpp", recursive=True):
+              c = open(f).read()
+              c = c.replace("ftruncate64((intptr_t)pStream->Base.File.hFile, (off64_t)NewFileSize)", "0")
+              c = c.replace("ftruncate64", "0 /* ftruncate64 */")
+              open(f, "w").write(c)
+              print("Patched FileStream:", f)
 
       - name: Mask all desktop graphics backends (imgui and gfx_opengl) for Switch
         shell: python
