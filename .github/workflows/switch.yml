@@ -216,8 +216,8 @@ jobs:
                       lines = content.splitlines()
                       new_lines = []
                       for line in lines:
-                          if "void __assert(" in line and "#ifndef __SWITCH__" not in line:
-                              new_lines.append(f"#ifndef __SWITCH__\n{line}\n#endif")
+                          if "void __assert(" in line and "SWITCH" not in line:
+                              new_lines.append(f"#if !defined(__SWITCH__) && !defined(SWITCH)\n{line}\n#endif")
                           else:
                               new_lines.append(line)
                       open(f, "w").write("\n".join(new_lines))
