@@ -8,6 +8,9 @@ jobs:
   build-switch:
     runs-on: ubuntu-latest
     container: devkitpro/devkita64:latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -16,7 +19,7 @@ jobs:
 
       - name: Build and Install Custom Switch Libraries (libzip, tinyxml2, json, spdlog)
         run: |
-          source /etc/profile.d/devkit-env.sh
+          . /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
 
           # 1. libzip
@@ -55,7 +58,7 @@ jobs:
 
       - name: Configure Switch build
         run: |
-          source /etc/profile.d/devkit-env.sh
+          . /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
 
           cat > /tmp/switch-init.cmake << 'CMAKEINIT'
@@ -82,7 +85,7 @@ jobs:
 
       - name: Build Switch NRO
         run: |
-          source /etc/profile.d/devkit-env.sh
+          . /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
           cmake --build build-switch --target soh -j$(nproc)
 
