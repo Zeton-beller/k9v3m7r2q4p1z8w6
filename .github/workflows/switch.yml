@@ -18,7 +18,7 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Build and Install Custom Switch Libraries (libzip, tinyxml2, json, spdlog)
+      - name: Build and Install Custom Switch Libraries (libzip, tinyxml2, json)
         run: |
           . /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
@@ -51,16 +51,24 @@ jobs:
             -DJSON_BuildTests=OFF
           cmake --build /tmp/json/build --target install
 
-          # 4. spdlog (带 Switch 平台 3 行 os-inl.h 兼容 Patch)
+          # 4. Clone spdlog
           git clone --depth 1 https://github.com/gabime/spdlog.git /tmp/spdlog
-          python3 -c '
-f = "/tmp/spdlog/include/spdlog/details/os-inl.h"
-content = open(f).read()
-content = content.replace("tm.tm_gmtoff", "0")
-content = content.replace("::isatty(fileno(file))", "false")
-content = content.replace("::fsync(fileno(fp))", "0")
-open(f, "w").write(content)
-'
+
+      # 采用 GitHub Actions 官方 shell: python 规范
+      - name: Patch spdlog os-inl.h for Switch
+        shell: python
+        run: |
+          path = "/tmp/spdlog/include/spdlog/details/os-inl.h"
+          text = open(path).read()
+          text = text.replace("tm.tm_gmtoff", "0")
+          text = text.replace("::isatty(fileno(file))", "false")
+          text = text.replace("::fsync(fileno(fp))", "0")
+          open(path, "w").write(text)
+
+      - name: Compile and Install spdlog
+        run: |
+          . /etc/profile.d/devkit-env.sh
+          export DEVKITPRO=/opt/devkitpro
           cmake -B /tmp/spdlog/build -S /tmp/spdlog \
             -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
             -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
@@ -84,12 +92,22 @@ open(f, "w").write(content)
             -DSWITCH=ON \
             -DCMAKE_BUILD_TYPE=Release
           
-          # Patch StormLib & ImGui loader
+          # Patch StormLib: ftruncate not available on Switch
           find build-switch/_deps -name "StormPort.h" 2>/dev/null | while read f; do
             sed -i 's|#define ftruncate64 ftruncate|#ifdef __SWITCH__\n#define ftruncate64(fd,sz) (0)\n#else\n#define ftruncate64 ftruncate\n#endif|g' "$f"
           done
-          python3 -c 'import glob; [open(f, "w").write("#ifndef __SWITCH__\n" + open(f).read() + "\n#endif\n") for f in glob.glob("build-switch/_deps/**/imgui_impl_opengl3_loader.h", recursive=True)]'
 
+      - name: Patch ImGui loader for Switch
+        shell: python
+        run: |
+          import glob
+          for f in glob.glob("build-switch/_deps/**/imgui_impl_opengl3_loader.h", recursive=True):
+              open(f, "w").write("#ifndef __SWITCH__\n" + open(f).read() + "\n#endif\n")
+
+      - name: Build Switch NRO Binary
+        run: |
+          . /etc/profile.d/devkit-env.sh
+          export DEVKITPRO=/opt/devkitpro
           cmake --build build-switch --target soh -j$(nproc)
 
       - name: Upload Switch NRO Artifact
