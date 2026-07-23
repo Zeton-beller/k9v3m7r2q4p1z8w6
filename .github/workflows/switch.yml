@@ -162,6 +162,14 @@ jobs:
                               open(path, "w").write(content)
                       except Exception: pass
 
+      - name: Patch old SwitchImpl.h includes to standard switch.h
+        shell: python
+        run: |
+          for f in ["soh/soh/OTRGlobals.cpp", "soh/soh/SohGui/SohGui.cpp"]:
+              content = open(f).read()
+              content = content.replace("port/switch/SwitchImpl.h", "switch.h")
+              open(f, "w").write(content)
+
       - name: Build Switch NRO Binary
         run: |
           . /etc/profile.d/devkit-env.sh
