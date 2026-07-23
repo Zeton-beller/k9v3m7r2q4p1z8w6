@@ -18,48 +18,24 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Switch Dependencies via dkp-pacman
+      - name: Build Switch NRO
         run: |
           . /etc/profile.d/devkit-env.sh
-          dkp-pacman -Sy --noconfirm
-          dkp-pacman -S --noconfirm switch-dev switch-sdl2 switch-glad switch-libpng switch-freetype switch-zlib switch-bzip2 switch-curl switch-libzip switch-tinyxml2 switch-nlohmann-json switch-spdlog || true
-
-      - name: Configure Switch build
-        run: |
-          . /etc/profile.d/devkit-env.sh
-          export DEVKITPRO=/opt/devkitpro
-
-          cat > /tmp/switch-init.cmake << 'CMAKEINIT'
-          set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE "LINKER:--whole-archive" "<LINK_ITEM>" "LINKER:--no-whole-archive" CACHE STRING "" FORCE)
-          set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE CACHE BOOL "" FORCE)
-          CMAKEINIT
-
-          cmake -B build-switch \
-            -C /tmp/switch-init.cmake \
-            -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
-            -DSWITCH=ON \
-            -DCMAKE_BUILD_TYPE=Release
-
-      - name: Patch FetchContent dependencies for Switch
-        run: |
+          $DEVKITPRO/portlibs/switch/bin/dkp-cmake -B build-switch -DSWITCH=ON -DCMAKE_BUILD_TYPE=Release
+          
           # Patch StormLib: ftruncate not available on Switch
           find build-switch/_deps -name "StormPort.h" 2>/dev/null | while read f; do
             sed -i 's|#define ftruncate64 ftruncate|#ifdef __SWITCH__\n#define ftruncate64(fd,sz) (0)\n#else\n#define ftruncate64 ftruncate\n#endif|g' "$f"
-            echo "Patched StormPort.h: $f"
           done
 
           # Patch ImGui loader: wrap in #ifndef __SWITCH__
           python3 -c 'import glob; [open(f, "w").write("#ifndef __SWITCH__\n" + open(f).read() + "\n#endif\n") for f in glob.glob("build-switch/_deps/**/imgui_impl_opengl3_loader.h", recursive=True)]'
 
-      - name: Build Switch NRO
-        run: |
-          . /etc/profile.d/devkit-env.sh
-          export DEVKITPRO=/opt/devkitpro
-          cmake --build build-switch --target soh -j$(nproc)
+          cmake --build build-switch --target soh.nro -j$(nproc)
 
       - name: Upload Switch NRO Artifact
         uses: actions/upload-artifact@v4
         with:
           name: soh-switch-cn
-          path: build-switch/soh/soh.nro
+          path: build-switch/soh.nro
           retention-days: 1
