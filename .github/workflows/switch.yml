@@ -149,9 +149,11 @@ jobs:
           export DEVKITPRO=/opt/devkitpro
           cmake --build build-switch --target soh -j$(nproc)
 
-      - name: Upload Switch NRO Artifact
-        uses: actions/upload-artifact@v4
+      - name: Create Release and Deploy NRO
+        uses: softprops/action-gh-release@v2
         with:
-          name: soh-switch-cn
-          path: build-switch/soh/soh.nro
-          retention-days: 1
+          tag_name: latest
+          name: SOH Switch Chinese Release
+          files: build-switch/soh/soh.nro
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
