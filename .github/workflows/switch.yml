@@ -123,11 +123,13 @@ jobs:
             sed -i 's|#define ftruncate64 ftruncate|#ifdef __SWITCH__\n#define ftruncate64(fd,sz) (0)\n#else\n#define ftruncate64 ftruncate\n#endif|g' "$f"
           done
 
-      - name: Patch ImGui loader and cpp for Switch
+      - name: Patch ImGui desktop backends (opengl3 and sdl2) for Switch
         shell: python
         run: |
           import glob
-          for f in glob.glob("build-switch/_deps/**/imgui_impl_opengl3*", recursive=True):
+          files = glob.glob("build-switch/_deps/**/imgui_impl_opengl3*", recursive=True) + \
+                  glob.glob("build-switch/_deps/**/imgui_impl_sdl2*", recursive=True)
+          for f in files:
               open(f, "w").write("#ifndef __SWITCH__\n" + open(f).read() + "\n#endif\n")
 
       - name: Build Switch NRO Binary
