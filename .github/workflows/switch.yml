@@ -51,14 +51,21 @@ jobs:
             -DJSON_BuildTests=OFF
           cmake --build /tmp/json/build --target install
 
-          # 4. spdlog (Switch 嵌入式 Header-Only 模式)
+          # 4. spdlog (带 Switch 平台 3 行 os-inl.h 兼容 Patch)
           git clone --depth 1 https://github.com/gabime/spdlog.git /tmp/spdlog
+          python3 -c '
+f = "/tmp/spdlog/include/spdlog/details/os-inl.h"
+content = open(f).read()
+content = content.replace("tm.tm_gmtoff", "0")
+content = content.replace("::isatty(fileno(file))", "false")
+content = content.replace("::fsync(fileno(fp))", "0")
+open(f, "w").write(content)
+'
           cmake -B /tmp/spdlog/build -S /tmp/spdlog \
             -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
             -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
-            -DSPDLOG_HEADER_ONLY=ON \
             -DSPDLOG_BUILD_TESTS=OFF -DSPDLOG_BUILD_EXAMPLE=OFF
-          cmake --build /tmp/spdlog/build --target install
+          cmake --build /tmp/spdlog/build --target install -j$(nproc)
 
       - name: Configure and Build Switch NRO
         run: |
