@@ -134,19 +134,15 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DSWITCH=ON \
             -DCMAKE_BUILD_TYPE=Release
-          
-          # Patch StormLib: ftruncate/lseek/off64_t for Switch
-          find build-switch/_deps -name "StormPort.h" 2>/devnull | while read f; do
-            cat >> "$f" << 'STORMPATCH'
 
-#ifdef __SWITCH__
-#include <sys/types.h>
-typedef off_t off64_t;
-#define lseek64 lseek
-#define ftruncate64(fd, sz) (0)
-#endif
-STORMPATCH
-          done
+      - name: Patch StormLib StormPort.h for Switch POSIX maps
+        shell: python
+        run: |
+          import glob
+          patch = "\n#ifdef __SWITCH__\n#include <sys/types.h>\ntypedef off_t off64_t;\n#define lseek64 lseek\n#define ftruncate64(fd, sz) (0)\n#endif\n"
+          for f in glob.glob("build-switch/_deps/**/StormPort.h", recursive=True):
+              open(f, "a").write(patch)
+              print("Patched:", f)
 
       - name: Mask all desktop graphics backends (imgui and gfx_opengl) for Switch
         shell: python
