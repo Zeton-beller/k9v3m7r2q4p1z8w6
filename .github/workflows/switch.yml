@@ -204,6 +204,23 @@ jobs:
                           open(f, "w").write(stub_header + content)
                           print("Injected stubs into:", f)
 
+      - name: Patch functions.h __assert declaration for Switch
+        shell: python
+        run: |
+          import os
+          for root, dirs, files in os.walk("."):
+              for file in files:
+                  if file == "functions.h":
+                      f = os.path.join(root, file)
+                      content = open(f).read()
+                      if "void __assert(" in content and "#ifndef __SWITCH__\nvoid __assert(" not in content:
+                          content = content.replace(
+                              "void __assert(const char* exp, const char* file, s32 line);",
+                              "#ifndef __SWITCH__\nvoid __assert(const char* exp, const char* file, s32 line);\n#endif"
+                          )
+                          open(f, "w").write(content)
+                          print("Patched functions.h:", f)
+
       - name: Patch all ColliderQuadDim member names in soh codebase
         shell: python
         run: |
