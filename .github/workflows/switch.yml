@@ -63,6 +63,14 @@ jobs:
           c = c.replace('include("${CMAKE_CURRENT_LIST_DIR}/libzip-targets.cmake")', 'add_library(libzip::zip UNKNOWN IMPORTED GLOBAL)\nset_target_properties(libzip::zip PROPERTIES IMPORTED_LOCATION "/opt/devkitpro/portlibs/switch/lib/libzip.a" INTERFACE_INCLUDE_DIRECTORIES "/opt/devkitpro/portlibs/switch/include")')
           open(f, "w").write(c)
 
+      - name: Patch tinyxml2Config.cmake for ALIAS Mapping
+        shell: python
+        run: |
+          f = "/opt/devkitpro/portlibs/switch/lib/cmake/tinyxml2/tinyxml2Config.cmake"
+          c = open(f).read()
+          c += "\nif(TARGET tinyxml2 AND NOT TARGET tinyxml2::tinyxml2)\n  add_library(tinyxml2::tinyxml2 ALIAS tinyxml2)\nendif()\nif(NOT TARGET tinyxml2::tinyxml2)\n  add_library(tinyxml2::tinyxml2 UNKNOWN IMPORTED GLOBAL)\n  set_target_properties(tinyxml2::tinyxml2 PROPERTIES IMPORTED_LOCATION \"/opt/devkitpro/portlibs/switch/lib/libtinyxml2.a\" INTERFACE_INCLUDE_DIRECTORIES \"/opt/devkitpro/portlibs/switch/include\")\nendif()\n"
+          open(f, "w").write(c)
+
       - name: Patch spdlog & bundled fmt for Switch
         shell: python
         run: |
@@ -100,11 +108,6 @@ jobs:
           if(NOT TARGET ZLIB::ZLIB)
             add_library(ZLIB::ZLIB UNKNOWN IMPORTED GLOBAL)
             set_target_properties(ZLIB::ZLIB PROPERTIES IMPORTED_LOCATION "/opt/devkitpro/portlibs/switch/lib/libz.a" INTERFACE_INCLUDE_DIRECTORIES "/opt/devkitpro/portlibs/switch/include")
-          endif()
-
-          if(NOT TARGET tinyxml2::tinyxml2)
-            add_library(tinyxml2::tinyxml2 UNKNOWN IMPORTED GLOBAL)
-            set_target_properties(tinyxml2::tinyxml2 PROPERTIES IMPORTED_LOCATION "/opt/devkitpro/portlibs/switch/lib/libtinyxml2.a" INTERFACE_INCLUDE_DIRECTORIES "/opt/devkitpro/portlibs/switch/include")
           endif()
           CMAKEINIT
 
