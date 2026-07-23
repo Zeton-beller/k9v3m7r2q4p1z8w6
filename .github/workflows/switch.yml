@@ -183,7 +183,6 @@ jobs:
         run: |
           import os
           lines = [
-              "#ifdef __SWITCH__",
               "#ifndef ImGui_ImplOpenGL3_Init",
               "#define ImGui_ImplOpenGL3_Init(...) (true)",
               "#define ImGui_ImplOpenGL3_Shutdown(...) ((void)0)",
@@ -193,7 +192,6 @@ jobs:
               "#define ImGui_ImplSDL2_Shutdown(...) ((void)0)",
               "#define ImGui_ImplSDL2_NewFrame(...) ((void)0)",
               "#define ImGui_ImplSDL2_ProcessEvent(...) (true)",
-              "#endif",
               "#endif"
           ]
           stub_header = "\n".join(lines) + "\n"
