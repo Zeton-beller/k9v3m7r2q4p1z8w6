@@ -269,16 +269,18 @@ jobs:
                               print(f"Patched {count} instances in {path}")
                       except Exception: pass
 
-      - name: Patch Extract.cpp, imgui.cpp & portable-file-dialogs.h for Switch linking
+      - name: Patch Extract.cpp, imgui.cpp, Fast3dWindow.cpp & pfd for Switch linking
         shell: python
         run: |
-          import os
+          import os, re
+          # 1. pfd header stub
           pfd_path = "soh/soh/Extractor/portable-file-dialogs.h"
           if os.path.exists(pfd_path):
               t = open(pfd_path).read().replace("#elif __EMSCRIPTEN__", "#elif defined(__EMSCRIPTEN__) || defined(__SWITCH__)")
               open(pfd_path, "w").write(t)
               print("Patched pfd header for Switch")
 
+          # 2. Extract.cpp zapd_report weak stub
           ext_path = "soh/soh/Extractor/Extract.cpp"
           if os.path.exists(ext_path):
               t = open(ext_path).read()
@@ -288,6 +290,7 @@ jobs:
                   open(ext_path, "w").write(t)
                   print("Patched Extract.cpp stub for Switch")
 
+          # 3. imgui.cpp Platform_OpenInShellFn_DefaultImpl stub
           for root, dirs, files in os.walk("."):
               for file in files:
                   if file == "imgui.cpp":
@@ -295,16 +298,36 @@ jobs:
                       try:
                           c = open(f).read()
                           if "Platform_OpenInShellFn_DefaultImpl" in c and "#ifndef __SWITCH__" not in c:
-                              c = c.replace(
-                                  "static bool Platform_OpenInShellFn_DefaultImpl(ImGuiContext* ctx, const char* path)",
-                                  "#ifndef __SWITCH__\nstatic bool Platform_OpenInShellFn_DefaultImpl(ImGuiContext* ctx, const char* path)"
-                              ).replace(
-                                  "return Platform_OpenInShellFn_DefaultImpl_POSIX(ctx, path);\n}",
-                                  "return Platform_OpenInShellFn_DefaultImpl_POSIX(ctx, path);\n}\n#else\nstatic bool Platform_OpenInShellFn_DefaultImpl(ImGuiContext* ctx, const char* path) { (void)ctx; (void)path; return false; }\n#endif"
+                              c = re.sub(
+                                  r'(static bool Platform_OpenInShellFn_DefaultImpl\(ImGuiContext\* ctx, const char\* path\)\s*\{)',
+                                  r'#ifndef __SWITCH__\n\1',
+                                  c
+                              )
+                              c = re.sub(
+                                  r'(return Platform_OpenInShellFn_DefaultImpl_POSIX\(ctx, path\);\s*\})',
+                                  r'\1\n#else\n(void)ctx; (void)path; return false;\n#endif',
+                                  c
                               )
                               open(f, "w").write(c)
                               print("Patched imgui.cpp for Switch:", f)
-                      except Exception: pass
+                      except Exception as e: print("Error patching imgui.cpp:", e)
+
+          # 4. Fast3dWindow.cpp desktop OGL vtable stub for Switch
+          for root, dirs, files in os.walk("."):
+              for file in files:
+                  if file == "Fast3dWindow.cpp":
+                      f = os.path.join(root, file)
+                      try:
+                          c = open(f).read()
+                          if "GfxRenderingAPIOGL" in c and "#ifndef __SWITCH__" not in c:
+                              c = re.sub(
+                                  r'(\bnew\s+Fast::GfxRenderingAPIOGL\(\))',
+                                  r'nullptr /* \1 */',
+                                  c
+                              )
+                              open(f, "w").write(c)
+                              print("Patched Fast3dWindow.cpp for Switch:", f)
+                      except Exception as e: print("Error patching Fast3dWindow.cpp:", e)
 
       - name: Redirect libultra types.h directly to devkitPro switch/types.h on Switch
         shell: python

@@ -38,14 +38,15 @@
   * 在 `soh/CMakeLists.txt` 中增加 `-lvorbisfile -lvorbis` 依赖链接；
   * 在 `switch.yml` 中为 `Extract.cpp` 注入 `zapd_report` Weak Stub 存根，并给 `portable-file-dialogs.h` 注入 `defined(__SWITCH__)` 屏蔽规则。
 
-### 7. 终极链接闭环：禁用 libzip ZSTD 扩展与 ImGui 壳弹窗 Stub (`switch.yml`)
-* **问题**：`libzip` 默认启用了主机端的 `zstd`，导致 Switch 链接时抛出 `ZSTD_isError` 等 18 个符号缺失；ImGui 内部默认包含了 `waitpid`/`execvp` 的壳弹窗逻辑。
+### 8. 101 条链接符号全量归类平定 (`CMakeLists.txt` & `switch.yml`)
+* **问题**：静态库链接依赖顺序颠倒引发 88 条 `oggpack_*` 报错；`imgui.cpp` 与 `Fast3dWindow.cpp` 残留 13 条 POSIX 与桌面虚函数表报错。
 * **解决**：
-  * 在 `switch.yml` 的 `libzip` CMake 参数中增加 `-DENABLE_ZSTD=OFF`（SoH 使用标准 zip/zlib，绝对不需要 zstd）；
-  * 在 `switch.yml` 预处理中拦截 `imgui.cpp`，为 `Platform_OpenInShellFn_DefaultImpl` 函数注入 `#ifndef __SWITCH__` 保护。
+  * 将 `soh/CMakeLists.txt` 中的静态库顺序更正为被依赖倒序：`-lvorbisfile -lvorbis -lopusfile -lopus -logg`；
+  * 使用 Python 正则在 `switch.yml` 中无缝平定 `imgui.cpp` 的 `Platform_OpenInShell` 和 `Fast3dWindow.cpp` 的 `GfxRenderingAPIOGL`。
 
 ---
 
-*最新更新时间：2026-07-24 (Checkpoint-2 终极闭环)*
+*最新更新时间：2026-07-24 (Checkpoint-2 全量 100% 平定)*
+
 
 
