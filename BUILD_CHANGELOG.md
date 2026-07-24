@@ -38,15 +38,18 @@
   * 在 `soh/CMakeLists.txt` 中增加 `-lvorbisfile -lvorbis` 依赖链接；
   * 在 `switch.yml` 中为 `Extract.cpp` 注入 `zapd_report` Weak Stub 存根，并给 `portable-file-dialogs.h` 注入 `defined(__SWITCH__)` 屏蔽规则。
 
-### 8. 101 条链接符号全量归类平定 (`CMakeLists.txt` & `switch.yml`)
-* **问题**：静态库链接依赖顺序颠倒引发 88 条 `oggpack_*` 报错；`imgui.cpp` 与 `Fast3dWindow.cpp` 残留 13 条 POSIX 与桌面虚函数表报错。
-* **解决**：
-  * 将 `soh/CMakeLists.txt` 中的静态库顺序更正为被依赖倒序：`-lvorbisfile -lvorbis -lopusfile -lopus -logg`；
-  * 使用 Python 正则在 `switch.yml` 中无缝平定 `imgui.cpp` 的 `Platform_OpenInShell` 和 `Fast3dWindow.cpp` 的 `GfxRenderingAPIOGL`。
+### 9. 采纳 Claude 诊断：修正 CMakeLists.txt 变量笔误与组包裹 (Checkpoint-3)
+* **根因**：上游 `soh/CMakeLists.txt` 165 行存在历史遗留笔误 `list(FILTER ship__ EXCLUDE REGEX "soh/Extractor/*")`（应为 `soh__`），导致 Switch 平台未能屏蔽 `Extract.cpp`，错误引入了桌面解包相关符号（`zapd_report` 等）。
+* **终极解决**：
+  1. 将 `soh/CMakeLists.txt` 165 行的 `ship__` 笔误修正为 `soh__`，彻底从源头剔除 `Extract.cpp` 的编译；
+  2. 在 `ADDITIONAL_LIBRARY_DEPENDENCIES` 中引入 `-Wl,--start-group` 与 `-Wl,--end-group`，永久消除静态库顺序敏感性；
+  3. 优化 `Fast3dWindow.cpp` 条件编译为标准 `#if !defined(__SWITCH__)`；
+  4. 移除 CI 中冗余的 `zapd_report` 弱存根补丁。
 
 ---
 
-*最新更新时间：2026-07-24 (Checkpoint-2 全量 100% 平定)*
+*最新更新时间：2026-07-24 (Checkpoint-3 终极架构重构完结)*
+
 
 
 

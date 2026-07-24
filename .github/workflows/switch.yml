@@ -277,7 +277,7 @@ jobs:
                               print(f"Patched {count} instances in {path}")
                       except Exception: pass
 
-      - name: Patch Extract.cpp, imgui.cpp, Fast3dWindow.cpp & pfd for Switch linking
+      - name: Patch imgui.cpp, Fast3dWindow.cpp & pfd for Switch linking
         shell: python
         run: |
           import os, re
@@ -288,17 +288,7 @@ jobs:
               open(pfd_path, "w").write(t)
               print("Patched pfd header for Switch")
 
-          # 2. Extract.cpp zapd_report weak stub
-          ext_path = "soh/soh/Extractor/Extract.cpp"
-          if os.path.exists(ext_path):
-              t = open(ext_path).read()
-              stub = "\n#ifdef __SWITCH__\nextern \"C\" __attribute__((weak)) int zapd_report(int argc, char** argv, void* extractCount, void* totalExtract) { return 0; }\n#endif\n"
-              if "zapd_report" in t and "__attribute__((weak))" not in t:
-                  t = t.replace('extern "C" int zapd_report', stub + 'extern "C" int zapd_report')
-                  open(ext_path, "w").write(t)
-                  print("Patched Extract.cpp stub for Switch")
-
-          # 3. imgui.cpp Platform_OpenInShellFn_DefaultImpl stub
+          # 2. imgui.cpp Platform_OpenInShellFn_DefaultImpl stub
           for root, dirs, files in os.walk("."):
               for file in files:
                   if file == "imgui.cpp":
@@ -320,7 +310,7 @@ jobs:
                               print("Patched imgui.cpp for Switch:", f)
                       except Exception as e: print("Error patching imgui.cpp:", e)
 
-          # 4. Fast3dWindow.cpp desktop OGL vtable stub for Switch
+          # 3. Fast3dWindow.cpp desktop OGL vtable stub for Switch
           for root, dirs, files in os.walk("."):
               for file in files:
                   if file == "Fast3dWindow.cpp":
@@ -330,7 +320,7 @@ jobs:
                           if "GfxRenderingAPIOGL" in c and "#ifndef __SWITCH__" not in c:
                               c = re.sub(
                                   r'(\bnew\s+Fast::GfxRenderingAPIOGL\(\))',
-                                  r'nullptr /* \1 */',
+                                  r'#if !defined(__SWITCH__)\n\1\n#else\nnullptr\n#endif',
                                   c
                               )
                               open(f, "w").write(c)
