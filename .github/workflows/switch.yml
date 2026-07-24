@@ -36,6 +36,9 @@ jobs:
           . /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
 
+          # 0. Install Switch opusfile from devkitPro portlibs
+          dkp-pacman -Sy --noconfirm switch-opusfile || true
+
           # 1. libzip (禁用所有桌面的可选动态依赖)
           git clone --depth 1 https://github.com/nih-at/libzip.git /tmp/libzip
           cmake -B /tmp/libzip/build -S /tmp/libzip \

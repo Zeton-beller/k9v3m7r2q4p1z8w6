@@ -677,6 +677,9 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "NintendoSwitch")
         "libultraship;"
         SDL2::SDL2
         -lglad
+        -lopusfile
+        -lopus
+        -logg
         Threads::Threads
     )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "CafeOS")
