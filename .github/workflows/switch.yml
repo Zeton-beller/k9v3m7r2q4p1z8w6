@@ -295,16 +295,10 @@ jobs:
                       f = os.path.join(root, file)
                       try:
                           c = open(f).read()
-                          if "Platform_OpenInShellFn_DefaultImpl" in c and "#ifndef __SWITCH__" not in c:
-                              c = re.sub(
-                                  r'(static bool Platform_OpenInShellFn_DefaultImpl\(ImGuiContext\* ctx, const char\* path\)\s*\{)',
-                                  r'#ifndef __SWITCH__\n\1',
-                                  c
-                              )
-                              c = re.sub(
-                                  r'(return Platform_OpenInShellFn_DefaultImpl_POSIX\(ctx, path\);\s*\})',
-                                  r'\1\n#else\n(void)ctx; (void)path; return false;\n#endif',
-                                  c
+                          if "Platform_OpenInShellFn_DefaultImpl" in c:
+                              c = c.replace(
+                                  "return Platform_OpenInShellFn_DefaultImpl_POSIX(ctx, path);",
+                                  "#ifndef __SWITCH__\n    return Platform_OpenInShellFn_DefaultImpl_POSIX(ctx, path);\n#else\n    (void)ctx; (void)path; return false;\n#endif"
                               )
                               open(f, "w").write(c)
                               print("Patched imgui.cpp for Switch:", f)
@@ -317,11 +311,10 @@ jobs:
                       f = os.path.join(root, file)
                       try:
                           c = open(f).read()
-                          if "GfxRenderingAPIOGL" in c and "#ifndef __SWITCH__" not in c:
-                              c = re.sub(
-                                  r'(\bnew\s+Fast::GfxRenderingAPIOGL\(\))',
-                                  r'#if !defined(__SWITCH__)\n\1\n#else\nnullptr\n#endif',
-                                  c
+                          if "GfxRenderingAPIOGL" in c:
+                              c = c.replace(
+                                  "new Fast::GfxRenderingAPIOGL()",
+                                  "#if !defined(__SWITCH__)\n    new Fast::GfxRenderingAPIOGL()\n#else\n    nullptr\n#endif"
                               )
                               open(f, "w").write(c)
                               print("Patched Fast3dWindow.cpp for Switch:", f)
@@ -349,7 +342,6 @@ jobs:
         run: |
           f1 = "soh/soh/OTRGlobals.cpp"
           c1 = open(f1).read()
-          c1 = c1.replace('#if not defined(__SWITCH__) && not defined(__WIIU__)\n#include "Extractor/Extract.h"\n#endif', '#include "Extractor/Extract.h"')
           c1 = c1.replace('Ship::Switch::Init(Ship::PreInitPhase);', '// Ship::Switch::Init handled by libultraship')
           c1 = c1.replace('#include <port/switch/SwitchImpl.h>', '')
           c1 = c1.replace('#include <switch.h>', '')
