@@ -38,17 +38,15 @@
   * 在 `soh/CMakeLists.txt` 中增加 `-lvorbisfile -lvorbis` 依赖链接；
   * 在 `switch.yml` 中为 `Extract.cpp` 注入 `zapd_report` Weak Stub 存根，并给 `portable-file-dialogs.h` 注入 `defined(__SWITCH__)` 屏蔽规则。
 
-### 12. 采纳 Claude 方案 8 工业级重构：引入 3 秒断言与全量正则匹配 (Checkpoint-6)
-* **根因**：之前 `replace` 静默替换失灵无法及时发现（需等待 40 分钟）；`Fast3dWindow.cpp` 因缺少 `Fast::` 前缀漏匹；`imgui.cpp` 错包调用点而非函数定义本身。
+### 13. 采纳 Claude 方案 9 精修：修复 Fast3dWindow 预处理器行首整行包裹语法 (Checkpoint-7)
+* **根因**：之前将 `#if` 错塞在 `mRenderingApi =` 赋值号右侧，导致 C++ 预处理器未能将 `#` 识别为行首指令，抛出 `stray '#'` 语法错误。
 * **终极解决**：
-  1. 在 CI 预处理中注入 `must_replace` 与 `must_sub` 秒级断言函数，若任意处未替换成功将在 3 秒内主动中断抛错；
-  2. 重构 `Fast3dWindow.cpp` 正则为 `r'new\s+(?:Fast::)?GfxRenderingAPIOGL\s*\(\s*\)'`，兼容命名空间前缀；
-  3. 重构 `imgui.cpp` 正则包裹 `Platform_OpenInShellFn_DefaultImpl_POSIX` **函数定义本身**，彻底消除 POSIX 调用；
-  4. 强化 `OTRGlobals.cpp` 正则兼容与 `Initialize()` 之前精准闭合断言。
+  * 在 `switch.yml` 中重构 `Fast3dWindow.cpp` 的正则，捕获原本缩进并将整条赋值语句 `mRenderingApi = ...;` 完全包裹在行首的 `#if !defined(__SWITCH__)` 与 `#else` / `#endif` 之间，完全符合 C++ 预处理器规范！
 
 ---
 
-*最新更新时间：2026-07-24 (Checkpoint-6 工业级 3 秒断言与全量正则完美重构完结)*
+*最新更新时间：2026-07-24 (Checkpoint-7 全量语法与链接无缝完结)*
+
 
 
 

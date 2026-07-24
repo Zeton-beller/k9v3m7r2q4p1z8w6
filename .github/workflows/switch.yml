@@ -329,7 +329,7 @@ jobs:
                           )
                           open(f, "w").write(c)
 
-          # 3. Fast3dWindow.cpp desktop OGL vtable 保护 (兼容 Fast:: 前缀)
+          # 3. Fast3dWindow.cpp desktop OGL vtable 保护 (整行包裹符合预处理器语法)
           for root, dirs, files in os.walk("."):
               for file in files:
                   if file == "Fast3dWindow.cpp":
@@ -337,8 +337,14 @@ jobs:
                       c = open(f).read()
                       c = must_sub(
                           c,
-                          r'new\s+(?:Fast::)?GfxRenderingAPIOGL\s*\(\s*\)',
-                          '#if !defined(__SWITCH__)\n    new Fast::GfxRenderingAPIOGL()\n#else\n    nullptr\n#endif',
+                          r'([ \t]*)mRenderingApi\s*=\s*new\s+(?:Fast::)?GfxRenderingAPIOGL\s*\(\s*\)\s*;',
+                          lambda m: (
+                              f"{m.group(1)}#if !defined(__SWITCH__)\n"
+                              f"{m.group(1)}    mRenderingApi = new Fast::GfxRenderingAPIOGL();\n"
+                              f"{m.group(1)}#else\n"
+                              f"{m.group(1)}    mRenderingApi = nullptr;\n"
+                              f"{m.group(1)}#endif"
+                          ),
                           "Fast3dWindow.cpp OGL vtable 保护"
                       )
                       open(f, "w").write(c)
