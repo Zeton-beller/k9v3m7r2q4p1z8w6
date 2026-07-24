@@ -38,17 +38,16 @@
   * 在 `soh/CMakeLists.txt` 中增加 `-lvorbisfile -lvorbis` 依赖链接；
   * 在 `switch.yml` 中为 `Extract.cpp` 注入 `zapd_report` Weak Stub 存根，并给 `portable-file-dialogs.h` 注入 `defined(__SWITCH__)` 屏蔽规则。
 
-### 9. 采纳 Claude 诊断：修正 CMakeLists.txt 变量笔误与组包裹 (Checkpoint-3)
-* **根因**：上游 `soh/CMakeLists.txt` 165 行存在历史遗留笔误 `list(FILTER ship__ EXCLUDE REGEX "soh/Extractor/*")`（应为 `soh__`），导致 Switch 平台未能屏蔽 `Extract.cpp`，错误引入了桌面解包相关符号（`zapd_report` 等）。
+### 10. 采纳 Claude 编译期型别隔离诊断：注入 OTRGlobals::RunExtract Switch 桩函数 (Checkpoint-4)
+* **根因**：剔除 `Extract.cpp` 并给 `Extract.h` 加 include guard 后，`OTRGlobals.cpp` 内部无保护的 `Extractor extract;` 会直接导致 Switch 在 C++ 语法分析编译期报错 `unknown type name 'Extractor'`（无法推进到链接阶段）。
 * **终极解决**：
-  1. 将 `soh/CMakeLists.txt` 165 行的 `ship__` 笔误修正为 `soh__`，彻底从源头剔除 `Extract.cpp` 的编译；
-  2. 在 `ADDITIONAL_LIBRARY_DEPENDENCIES` 中引入 `-Wl,--start-group` 与 `-Wl,--end-group`，永久消除静态库顺序敏感性；
-  3. 优化 `Fast3dWindow.cpp` 条件编译为标准 `#if !defined(__SWITCH__)`；
-  4. 移除 CI 中冗余的 `zapd_report` 弱存根补丁。
+  * 在 `switch.yml` 中对 `OTRGlobals.cpp` 的 `RunExtract` 函数体与 `Extractor::ShowErrorBox` 注入 `#ifndef __SWITCH__` 条件隔离；
+  * 为 Switch 平台提供专用的空实现桩函数 `void OTRGlobals::RunExtract(...) {}`，使编译期与链接期两端无缝闭环！
 
 ---
 
-*最新更新时间：2026-07-24 (Checkpoint-3 终极架构重构完结)*
+*最新更新时间：2026-07-24 (Checkpoint-4 编译期与链接期双重无缝闭环)*
+
 
 
 

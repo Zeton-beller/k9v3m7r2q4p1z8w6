@@ -337,7 +337,7 @@ jobs:
                       except Exception as e:
                           print("Error redirecting", p, e)
 
-      - name: Patch OTRGlobals.cpp and SohGui.cpp to include switch.h at line 1
+      - name: Patch OTRGlobals.cpp and SohGui.cpp for Switch compile and link
         shell: python
         run: |
           f1 = "soh/soh/OTRGlobals.cpp"
@@ -346,6 +346,26 @@ jobs:
           c1 = c1.replace('#include <port/switch/SwitchImpl.h>', '')
           c1 = c1.replace('#include <switch.h>', '')
           c1 = "#ifdef __SWITCH__\n#include <switch.h>\n#endif\n" + c1
+
+          # 隔离 Extractor::ShowErrorBox 避免编译期未知类型报错
+          c1 = c1.replace(
+              'Extractor::ShowErrorBox(title, body);',
+              '#ifndef __SWITCH__\n    Extractor::ShowErrorBox(title, body);\n#endif'
+          )
+
+          # 隔离 RunExtract 函数体，避免 Switch 编译期出现 Extractor 类型未声明错误
+          if 'void OTRGlobals::RunExtract(int argc, char* argv[]) {' in c1 and '#ifndef __SWITCH__\nvoid OTRGlobals::RunExtract' not in c1:
+              c1 = c1.replace(
+                  'void OTRGlobals::RunExtract(int argc, char* argv[]) {',
+                  '#ifndef __SWITCH__\nvoid OTRGlobals::RunExtract(int argc, char* argv[]) {'
+              )
+              # 在 RunExtract 结尾注入 #else 的 Switch 空桩函数实现
+              if 'bool OTRGlobals::HasMasterQuest()' in c1:
+                  c1 = c1.replace(
+                      'bool OTRGlobals::HasMasterQuest()',
+                      '#else\nvoid OTRGlobals::RunExtract(int argc, char* argv[]) {}\n#endif\n\nbool OTRGlobals::HasMasterQuest()'
+                  )
+
           open(f1, "w").write(c1)
 
           f2 = "soh/soh/SohGui/SohGui.cpp"
