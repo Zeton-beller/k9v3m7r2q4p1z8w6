@@ -256,16 +256,17 @@ jobs:
       - name: Patch all ColliderQuadDim member names in soh codebase
         shell: python
         run: |
-          import os
+          import os, re
           for root, dirs, files in os.walk("soh"):
               for f in files:
                   if f.endswith(('.cpp', '.h', '.hpp', '.c')):
                       path = os.path.join(root, f)
                       try:
                           content = open(path).read()
-                          if 'dim.quad[' in content:
-                              content = content.replace('dim.quad[', 'dim.quad_t[')
-                              open(path, "w").write(content)
+                          patched, count = re.subn(r'(\bdim|\bsrc|\bdest)([\.\->]+)quad\[', r'\1\2quad_t[', content)
+                          if count > 0:
+                              open(path, "w").write(patched)
+                              print(f"Patched {count} instances in {path}")
                       except Exception: pass
 
       - name: Redirect libultra types.h directly to devkitPro switch/types.h on Switch
