@@ -34,6 +34,14 @@ jobs:
             ccache-switch-
           save-always: true
 
+      - name: Configure ccache Environment
+        run: |
+          mkdir -p ~/.cache/ccache
+          echo "CCACHE_DIR=~/.cache/ccache" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=2G" >> $GITHUB_ENV
+          echo "CCACHE_COMPRESS=1" >> $GITHUB_ENV
+          echo "PATH=/usr/lib/ccache:$PATH" >> $GITHUB_ENV
+
       - name: Build and Install Custom Switch Libraries (libzip, tinyxml2, json)
         run: |
           . /etc/profile.d/devkit-env.sh
@@ -153,7 +161,7 @@ jobs:
           endif()
           CMAKEINIT
 
-          cmake -B build-switch \
+          cmake -B build-switch -S . \
             -C /tmp/switch-init.cmake \
             -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
             -DCMAKE_PREFIX_PATH=$DEVKITPRO/portlibs/switch \
