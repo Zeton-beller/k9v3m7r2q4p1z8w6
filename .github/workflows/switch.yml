@@ -86,7 +86,7 @@ jobs:
           cmake -B /tmp/opusfile/build -S /tmp/opusfile \
             -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
             -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
-            -DBUILD_SHARED_LIBS=OFF -DOP_DISABLE_EXAMPLES=ON -DOP_DISABLE_DOC=ON
+            -DBUILD_SHARED_LIBS=OFF -DOP_DISABLE_HTTP=ON -DOP_DISABLE_EXAMPLES=ON -DOP_DISABLE_DOC=ON
           cmake --build /tmp/opusfile/build --target install -j$(nproc)
 
           # 7. Clone spdlog
