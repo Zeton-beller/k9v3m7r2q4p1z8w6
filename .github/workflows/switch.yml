@@ -2,6 +2,9 @@ name: Build Switch CN NRO
 
 on:
   push:
+    paths-ignore:
+      - '**.md'
+      - 'BUILD_CHANGELOG.md'
   workflow_dispatch:
 
 jobs:
