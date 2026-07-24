@@ -192,14 +192,14 @@ typedef struct {
 } ColliderTrisInitType1; // size = 0x10
 
 typedef struct {
-    /* 0x00 */ Vec3f quad[4];
+    /* 0x00 */ Vec3f quad_t[4];
     /* 0x30 */ Vec3s dcMid; // midpoint of vectors d, c
     /* 0x36 */ Vec3s baMid; // midpoint of vectors b, a
     /* 0x3C */ f32 acDist; // distance to nearest AC collision this frame.
 } ColliderQuadDim; // size = 0x40
 
 typedef struct {
-    /* 0x00 */ Vec3f quad[4];
+    /* 0x00 */ Vec3f quad_t[4];
 } ColliderQuadDimInit; // size = 0x30
 
 typedef struct {
