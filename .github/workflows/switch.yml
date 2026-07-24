@@ -36,9 +36,6 @@ jobs:
           . /etc/profile.d/devkit-env.sh
           export DEVKITPRO=/opt/devkitpro
 
-          # 0. Install Switch opusfile from devkitPro portlibs
-          dkp-pacman -Sy --noconfirm switch-opusfile || true
-
           # 1. libzip (禁用所有桌面的可选动态依赖)
           git clone --depth 1 https://github.com/nih-at/libzip.git /tmp/libzip
           cmake -B /tmp/libzip/build -S /tmp/libzip \
@@ -68,7 +65,31 @@ jobs:
             -DJSON_BuildTests=OFF
           cmake --build /tmp/json/build --target install
 
-          # 4. Clone spdlog
+          # 4. ogg
+          git clone --depth 1 https://github.com/xiph/ogg.git /tmp/ogg
+          cmake -B /tmp/ogg/build -S /tmp/ogg \
+            -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
+            -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
+            -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTING=OFF
+          cmake --build /tmp/ogg/build --target install -j$(nproc)
+
+          # 5. opus
+          git clone --depth 1 https://github.com/xiph/opus.git /tmp/opus
+          cmake -B /tmp/opus/build -S /tmp/opus \
+            -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
+            -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
+            -DBUILD_SHARED_LIBS=OFF -DOPUS_BUILD_TESTING=OFF -DOPUS_BUILD_PROGRAMS=OFF
+          cmake --build /tmp/opus/build --target install -j$(nproc)
+
+          # 6. opusfile
+          git clone --depth 1 https://github.com/xiph/opusfile.git /tmp/opusfile
+          cmake -B /tmp/opusfile/build -S /tmp/opusfile \
+            -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake \
+            -DCMAKE_INSTALL_PREFIX=$DEVKITPRO/portlibs/switch \
+            -DBUILD_SHARED_LIBS=OFF -DOP_DISABLE_EXAMPLES=ON -DOP_DISABLE_DOC=ON
+          cmake --build /tmp/opusfile/build --target install -j$(nproc)
+
+          # 7. Clone spdlog
           git clone --depth 1 https://github.com/gabime/spdlog.git /tmp/spdlog
 
       - name: Patch libzip-config.cmake for Direct Static Import
