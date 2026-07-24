@@ -359,11 +359,11 @@ jobs:
                   'void OTRGlobals::RunExtract(int argc, char* argv[]) {',
                   '#ifndef __SWITCH__\nvoid OTRGlobals::RunExtract(int argc, char* argv[]) {'
               )
-              # 在 RunExtract 结尾注入 #else 的 Switch 空桩函数实现
-              if 'bool OTRGlobals::HasMasterQuest()' in c1:
+              # 精准在 Initialize() 之前闭合 #else，绝对不误吞 Initialize、ScaleImGui 等函数！
+              if 'void OTRGlobals::Initialize() {' in c1:
                   c1 = c1.replace(
-                      'bool OTRGlobals::HasMasterQuest()',
-                      '#else\nvoid OTRGlobals::RunExtract(int argc, char* argv[]) {}\n#endif\n\nbool OTRGlobals::HasMasterQuest()'
+                      'void OTRGlobals::Initialize() {',
+                      '#else\nvoid OTRGlobals::RunExtract(int argc, char* argv[]) {}\n#endif\n\nvoid OTRGlobals::Initialize() {'
                   )
 
           open(f1, "w").write(c1)

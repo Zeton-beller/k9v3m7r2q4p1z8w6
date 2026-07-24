@@ -38,15 +38,15 @@
   * 在 `soh/CMakeLists.txt` 中增加 `-lvorbisfile -lvorbis` 依赖链接；
   * 在 `switch.yml` 中为 `Extract.cpp` 注入 `zapd_report` Weak Stub 存根，并给 `portable-file-dialogs.h` 注入 `defined(__SWITCH__)` 屏蔽规则。
 
-### 10. 采纳 Claude 编译期型别隔离诊断：注入 OTRGlobals::RunExtract Switch 桩函数 (Checkpoint-4)
-* **根因**：剔除 `Extract.cpp` 并给 `Extract.h` 加 include guard 后，`OTRGlobals.cpp` 内部无保护的 `Extractor extract;` 会直接导致 Switch 在 C++ 语法分析编译期报错 `unknown type name 'Extractor'`（无法推进到链接阶段）。
+### 11. 采纳 Claude 锚点精修：修正 OTRGlobals::RunExtract 的 #else 闭合位置 (Checkpoint-5)
+* **根因**：之前将 `#else` 错锚定在 `HasMasterQuest` 前，误将 `Initialize`、`ScaleImGui` 等 4 个核心函数包进了 `#ifndef __SWITCH__` 中，导致 Switch 编译下缺失这 4 个函数的定义。
 * **终极解决**：
-  * 在 `switch.yml` 中对 `OTRGlobals.cpp` 的 `RunExtract` 函数体与 `Extractor::ShowErrorBox` 注入 `#ifndef __SWITCH__` 条件隔离；
-  * 为 Switch 平台提供专用的空实现桩函数 `void OTRGlobals::RunExtract(...) {}`，使编译期与链接期两端无缝闭环！
+  * 将 `#else` 的闭合锚点精确重定向至 `void OTRGlobals::Initialize() {` 之前，确保 `Initialize` 与 `ScaleImGui` 完美保留在全局编译中！
 
 ---
 
-*最新更新时间：2026-07-24 (Checkpoint-4 编译期与链接期双重无缝闭环)*
+*最新更新时间：2026-07-24 (Checkpoint-5 完美无缝闭环)*
+
 
 
 
