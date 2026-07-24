@@ -673,6 +673,9 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "NintendoSwitch")
     find_package(SDL2)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        ${DEVKITPRO}/portlibs/switch/include
+    )
     set(ADDITIONAL_LIBRARY_DEPENDENCIES
         "libultraship;"
         SDL2::SDL2
