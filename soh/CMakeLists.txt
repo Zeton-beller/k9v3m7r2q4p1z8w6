@@ -162,7 +162,7 @@ if (NOT ESPEAK)
 endif()
 
 # soh/Extractor {{{
-list(FILTER soh__ EXCLUDE REGEX "soh/Extractor/*")
+list(FILTER soh__ EXCLUDE REGEX "soh/Extractor/.*")
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "NintendoSwitch|CafeOS")
     file(GLOB_RECURSE soh__Extractor RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
