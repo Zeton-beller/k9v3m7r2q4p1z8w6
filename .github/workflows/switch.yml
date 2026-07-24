@@ -277,48 +277,71 @@ jobs:
                               print(f"Patched {count} instances in {path}")
                       except Exception: pass
 
-      - name: Patch imgui.cpp, Fast3dWindow.cpp & pfd for Switch linking
+      - name: Patch Extract.cpp, imgui.cpp, Fast3dWindow.cpp & pfd for Switch linking
         shell: python
         run: |
           import os, re
+
+          def must_replace(content, old, new, label, count=1):
+              actual = content.count(old)
+              if actual < count:
+                  raise SystemExit(
+                      f"\n[PATCH FAILED] {label}\n"
+                      f"预期至少匹配 {count} 处，实际匹配到 {actual} 处。\n"
+                      f"查找的字符串:\n{old!r}\n"
+                  )
+              print(f"[PATCH OK] {label}: 匹配到 {actual} 处，已替换")
+              return content.replace(old, new)
+
+          def must_sub(content, pattern, repl, label, flags=0):
+              new_content, n = re.subn(pattern, repl, content, flags=flags)
+              if n == 0:
+                  raise SystemExit(f"\n[PATCH FAILED] {label}\n正则未匹配到任何内容:\n{pattern!r}\n")
+              print(f"[PATCH OK] {label}: 替换了 {n} 处")
+              return new_content
+
           # 1. pfd header stub
           pfd_path = "soh/soh/Extractor/portable-file-dialogs.h"
           if os.path.exists(pfd_path):
-              t = open(pfd_path).read().replace("#elif __EMSCRIPTEN__", "#elif defined(__EMSCRIPTEN__) || defined(__SWITCH__)")
+              t = open(pfd_path).read()
+              t = must_replace(t, "#elif __EMSCRIPTEN__", "#elif defined(__EMSCRIPTEN__) || defined(__SWITCH__)", "pfd header Switch 保护")
               open(pfd_path, "w").write(t)
-              print("Patched pfd header for Switch")
 
-          # 2. imgui.cpp Platform_OpenInShellFn_DefaultImpl stub
+          # 2. imgui.cpp POSIX 函数定义与调用点双重保护
           for root, dirs, files in os.walk("."):
               for file in files:
                   if file == "imgui.cpp":
                       f = os.path.join(root, file)
-                      try:
-                          c = open(f).read()
-                          if "Platform_OpenInShellFn_DefaultImpl" in c:
-                              c = c.replace(
-                                  "return Platform_OpenInShellFn_DefaultImpl_POSIX(ctx, path);",
-                                  "#ifndef __SWITCH__\n    return Platform_OpenInShellFn_DefaultImpl_POSIX(ctx, path);\n#else\n    (void)ctx; (void)path; return false;\n#endif"
-                              )
-                              open(f, "w").write(c)
-                              print("Patched imgui.cpp for Switch:", f)
-                      except Exception as e: print("Error patching imgui.cpp:", e)
+                      c = open(f).read()
+                      if "Platform_OpenInShellFn_DefaultImpl_POSIX" in c:
+                          c = must_sub(
+                              c,
+                              r'(static\s+bool\s+Platform_OpenInShellFn_DefaultImpl_POSIX\s*\([^)]*\)\s*\{(?:[^{}]|\{[^{}]*\})*\})',
+                              r'#ifndef __SWITCH__\n\1\n#endif',
+                              "imgui.cpp POSIX 函数定义保护",
+                              flags=re.DOTALL
+                          )
+                          c = must_sub(
+                              c,
+                              r'return Platform_OpenInShellFn_DefaultImpl_POSIX\(ctx, path\);',
+                              '#ifndef __SWITCH__\n    return Platform_OpenInShellFn_DefaultImpl_POSIX(ctx, path);\n#else\n    (void)ctx; (void)path; return false;\n#endif',
+                              "imgui.cpp POSIX 调用点保护"
+                          )
+                          open(f, "w").write(c)
 
-          # 3. Fast3dWindow.cpp desktop OGL vtable stub for Switch
+          # 3. Fast3dWindow.cpp desktop OGL vtable 保护 (兼容 Fast:: 前缀)
           for root, dirs, files in os.walk("."):
               for file in files:
                   if file == "Fast3dWindow.cpp":
                       f = os.path.join(root, file)
-                      try:
-                          c = open(f).read()
-                          if "GfxRenderingAPIOGL" in c:
-                              c = c.replace(
-                                  "new Fast::GfxRenderingAPIOGL()",
-                                  "#if !defined(__SWITCH__)\n    new Fast::GfxRenderingAPIOGL()\n#else\n    nullptr\n#endif"
-                              )
-                              open(f, "w").write(c)
-                              print("Patched Fast3dWindow.cpp for Switch:", f)
-                      except Exception as e: print("Error patching Fast3dWindow.cpp:", e)
+                      c = open(f).read()
+                      c = must_sub(
+                          c,
+                          r'new\s+(?:Fast::)?GfxRenderingAPIOGL\s*\(\s*\)',
+                          '#if !defined(__SWITCH__)\n    new Fast::GfxRenderingAPIOGL()\n#else\n    nullptr\n#endif',
+                          "Fast3dWindow.cpp OGL vtable 保护"
+                      )
+                      open(f, "w").write(c)
 
       - name: Redirect libultra types.h directly to devkitPro switch/types.h on Switch
         shell: python
@@ -340,31 +363,56 @@ jobs:
       - name: Patch OTRGlobals.cpp and SohGui.cpp for Switch compile and link
         shell: python
         run: |
+          import re
+
+          def must_replace(content, old, new, label, count=1):
+              actual = content.count(old)
+              if actual < count:
+                  raise SystemExit(
+                      f"\n[PATCH FAILED] {label}\n"
+                      f"预期至少匹配 {count} 处，实际匹配到 {actual} 处。\n"
+                      f"查找的字符串:\n{old!r}\n"
+                  )
+              print(f"[PATCH OK] {label}: 匹配到 {actual} 处，已替换")
+              return content.replace(old, new)
+
+          def must_sub(content, pattern, repl, label, flags=0):
+              new_content, n = re.subn(pattern, repl, content, flags=flags)
+              if n == 0:
+                  raise SystemExit(f"\n[PATCH FAILED] {label}\n正则未匹配到任何内容:\n{pattern!r}\n")
+              print(f"[PATCH OK] {label}: 替换了 {n} 处")
+              return new_content
+
           f1 = "soh/soh/OTRGlobals.cpp"
           c1 = open(f1).read()
-          c1 = c1.replace('Ship::Switch::Init(Ship::PreInitPhase);', '// Ship::Switch::Init handled by libultraship')
+          c1 = must_replace(c1, 'Ship::Switch::Init(Ship::PreInitPhase);',
+                             '// Ship::Switch::Init handled by libultraship', "Switch::Init 注释")
           c1 = c1.replace('#include <port/switch/SwitchImpl.h>', '')
           c1 = c1.replace('#include <switch.h>', '')
           c1 = "#ifdef __SWITCH__\n#include <switch.h>\n#endif\n" + c1
 
-          # 隔离 Extractor::ShowErrorBox 避免编译期未知类型报错
-          c1 = c1.replace(
-              'Extractor::ShowErrorBox(title, body);',
-              '#ifndef __SWITCH__\n    Extractor::ShowErrorBox(title, body);\n#endif'
+          # ShowErrorBox 调用点：用正则容忍参数名/空格差异
+          c1 = must_sub(
+              c1,
+              r'Extractor::ShowErrorBox\([^)]*\);',
+              lambda m: f'#ifndef __SWITCH__\n    {m.group(0)}\n#endif',
+              "ShowErrorBox 调用点保护"
           )
 
-          # 隔离 RunExtract 函数体，避免 Switch 编译期出现 Extractor 类型未声明错误
-          if 'void OTRGlobals::RunExtract(int argc, char* argv[]) {' in c1 and '#ifndef __SWITCH__\nvoid OTRGlobals::RunExtract' not in c1:
-              c1 = c1.replace(
-                  'void OTRGlobals::RunExtract(int argc, char* argv[]) {',
-                  '#ifndef __SWITCH__\nvoid OTRGlobals::RunExtract(int argc, char* argv[]) {'
-              )
-              # 精准在 Initialize() 之前闭合 #else，绝对不误吞 Initialize、ScaleImGui 等函数！
-              if 'void OTRGlobals::Initialize() {' in c1:
-                  c1 = c1.replace(
-                      'void OTRGlobals::Initialize() {',
-                      '#else\nvoid OTRGlobals::RunExtract(int argc, char* argv[]) {}\n#endif\n\nvoid OTRGlobals::Initialize() {'
-                  )
+          # RunExtract 函数体：用正则容忍 char* argv[] / char** argv 两种写法
+          c1 = must_sub(
+              c1,
+              r'void OTRGlobals::RunExtract\(int argc,\s*char\*?\*?\s*argv(?:\[\])?\)\s*\{',
+              lambda m: f'#ifndef __SWITCH__\n{m.group(0)}',
+              "RunExtract 起始锚点"
+          )
+
+          c1 = must_replace(
+              c1,
+              'void OTRGlobals::Initialize() {',
+              '#else\nvoid OTRGlobals::RunExtract(int argc, char* argv[]) {}\n#endif\n\nvoid OTRGlobals::Initialize() {',
+              "RunExtract 闭合锚点（Initialize 之前）"
+          )
 
           open(f1, "w").write(c1)
 
