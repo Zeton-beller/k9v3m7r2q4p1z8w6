@@ -675,6 +675,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "NintendoSwitch")
     find_package(Threads REQUIRED)
     target_include_directories(${PROJECT_NAME} PRIVATE
         ${DEVKITPRO}/portlibs/switch/include
+        ${DEVKITPRO}/portlibs/switch/include/opus
     )
     set(ADDITIONAL_LIBRARY_DEPENDENCIES
         "libultraship;"
