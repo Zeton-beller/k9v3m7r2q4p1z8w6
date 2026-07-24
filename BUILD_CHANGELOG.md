@@ -38,7 +38,14 @@
   * 在 `soh/CMakeLists.txt` 中增加 `-lvorbisfile -lvorbis` 依赖链接；
   * 在 `switch.yml` 中为 `Extract.cpp` 注入 `zapd_report` Weak Stub 存根，并给 `portable-file-dialogs.h` 注入 `defined(__SWITCH__)` 屏蔽规则。
 
+### 7. 终极链接闭环：禁用 libzip ZSTD 扩展与 ImGui 壳弹窗 Stub (`switch.yml`)
+* **问题**：`libzip` 默认启用了主机端的 `zstd`，导致 Switch 链接时抛出 `ZSTD_isError` 等 18 个符号缺失；ImGui 内部默认包含了 `waitpid`/`execvp` 的壳弹窗逻辑。
+* **解决**：
+  * 在 `switch.yml` 的 `libzip` CMake 参数中增加 `-DENABLE_ZSTD=OFF`（SoH 使用标准 zip/zlib，绝对不需要 zstd）；
+  * 在 `switch.yml` 预处理中拦截 `imgui.cpp`，为 `Platform_OpenInShellFn_DefaultImpl` 函数注入 `#ifndef __SWITCH__` 保护。
+
 ---
 
-*最新更新时间：2026-07-24 (Checkpoint-2)*
+*最新更新时间：2026-07-24 (Checkpoint-2 终极闭环)*
+
 

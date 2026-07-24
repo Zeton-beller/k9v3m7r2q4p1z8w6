@@ -48,7 +48,7 @@ jobs:
             -DENABLE_COMMONCRYPTO=OFF -DENABLE_GNUTLS=OFF \
             -DENABLE_MBEDTLS=OFF -DENABLE_OPENSSL=OFF \
             -DENABLE_WINDOWS_CRYPTO=OFF -DENABLE_BZIP2=OFF \
-            -DENABLE_LZMA=OFF -DBUILD_TOOLS=OFF \
+            -DENABLE_LZMA=OFF -DBUILD_TOOLS=OFF -DENABLE_ZSTD=OFF \
             -DBUILD_REGRESS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_DOC=OFF
           cmake --build /tmp/libzip/build --target install -j$(nproc)
 
@@ -269,7 +269,7 @@ jobs:
                               print(f"Patched {count} instances in {path}")
                       except Exception: pass
 
-      - name: Patch Extract.cpp & portable-file-dialogs.h for Switch linking
+      - name: Patch Extract.cpp, imgui.cpp & portable-file-dialogs.h for Switch linking
         shell: python
         run: |
           import os
@@ -287,6 +287,24 @@ jobs:
                   t = t.replace('extern "C" int zapd_report', stub + 'extern "C" int zapd_report')
                   open(ext_path, "w").write(t)
                   print("Patched Extract.cpp stub for Switch")
+
+          for root, dirs, files in os.walk("."):
+              for file in files:
+                  if file == "imgui.cpp":
+                      f = os.path.join(root, file)
+                      try:
+                          c = open(f).read()
+                          if "Platform_OpenInShellFn_DefaultImpl" in c and "#ifndef __SWITCH__" not in c:
+                              c = c.replace(
+                                  "static bool Platform_OpenInShellFn_DefaultImpl(ImGuiContext* ctx, const char* path)",
+                                  "#ifndef __SWITCH__\nstatic bool Platform_OpenInShellFn_DefaultImpl(ImGuiContext* ctx, const char* path)"
+                              ).replace(
+                                  "return Platform_OpenInShellFn_DefaultImpl_POSIX(ctx, path);\n}",
+                                  "return Platform_OpenInShellFn_DefaultImpl_POSIX(ctx, path);\n}\n#else\nstatic bool Platform_OpenInShellFn_DefaultImpl(ImGuiContext* ctx, const char* path) { (void)ctx; (void)path; return false; }\n#endif"
+                              )
+                              open(f, "w").write(c)
+                              print("Patched imgui.cpp for Switch:", f)
+                      except Exception: pass
 
       - name: Redirect libultra types.h directly to devkitPro switch/types.h on Switch
         shell: python
