@@ -269,6 +269,25 @@ jobs:
                               print(f"Patched {count} instances in {path}")
                       except Exception: pass
 
+      - name: Patch Extract.cpp & portable-file-dialogs.h for Switch linking
+        shell: python
+        run: |
+          import os
+          pfd_path = "soh/soh/Extractor/portable-file-dialogs.h"
+          if os.path.exists(pfd_path):
+              t = open(pfd_path).read().replace("#elif __EMSCRIPTEN__", "#elif defined(__EMSCRIPTEN__) || defined(__SWITCH__)")
+              open(pfd_path, "w").write(t)
+              print("Patched pfd header for Switch")
+
+          ext_path = "soh/soh/Extractor/Extract.cpp"
+          if os.path.exists(ext_path):
+              t = open(ext_path).read()
+              stub = "\n#ifdef __SWITCH__\nextern \"C\" __attribute__((weak)) int zapd_report(int argc, char** argv, void* extractCount, void* totalExtract) { return 0; }\n#endif\n"
+              if "zapd_report" in t and "__attribute__((weak))" not in t:
+                  t = t.replace('extern "C" int zapd_report', stub + 'extern "C" int zapd_report')
+                  open(ext_path, "w").write(t)
+                  print("Patched Extract.cpp stub for Switch")
+
       - name: Redirect libultra types.h directly to devkitPro switch/types.h on Switch
         shell: python
         run: |

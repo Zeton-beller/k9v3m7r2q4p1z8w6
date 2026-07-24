@@ -30,8 +30,15 @@
 * **问题**：`quad` 标识符与系统底层定义冲突；此前只改了业务代码，未改头文件导致 59% 处报无成员错误。
 * **解决**：
   * 在 `soh/include/z64collision_check.h` 源码中将 `ColliderQuadDim` / `ColliderQuadDimInit` 的结构体成员重命名为 `quad_t[4]`；
-  * CI 脚本同步将 14 个 `.c/.cpp` 业务代码文件中的 `dim.quad[` 替换为 `dim.quad_t[`，形成 100% 闭环。
+  * CI 脚本使用正则 `(\bdim|\bsrc|\bdest)([\.\->]+)quad\[` 精确替换所有 4 种访问结构，实现 0 副作用 100% 匹配。
+
+### 6. 100% 链接期 Vorbis 音频库与桌面解包存根防护 (`CMakeLists.txt` & `switch.yml`)
+* **问题**：编译 100% 通过后，链接 ELF 阶段抛出 `ov_open_callbacks` 未定义与 `waitpid`/`execvp`/`pipe`/`zapd_report` 符号缺失。
+* **解决**：
+  * 在 `soh/CMakeLists.txt` 中增加 `-lvorbisfile -lvorbis` 依赖链接；
+  * 在 `switch.yml` 中为 `Extract.cpp` 注入 `zapd_report` Weak Stub 存根，并给 `portable-file-dialogs.h` 注入 `defined(__SWITCH__)` 屏蔽规则。
 
 ---
 
-*最新更新时间：2026-07-24*
+*最新更新时间：2026-07-24 (Checkpoint-2)*
+

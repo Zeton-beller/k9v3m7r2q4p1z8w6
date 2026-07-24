@@ -684,6 +684,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "NintendoSwitch")
         -lopusfile
         -lopus
         -logg
+        -lvorbisfile
+        -lvorbis
         Threads::Threads
     )
 elseif(CMAKE_SYSTEM_NAME STREQUAL "CafeOS")
